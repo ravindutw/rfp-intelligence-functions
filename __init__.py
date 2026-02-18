@@ -1,3 +1,3 @@
-# RAG Embedding Demo
-# © 2026 Ravindu Wijesundara
-# https://github.com/ravindutw/rag-embedding-demo.git
+# RFP Intelligence Project
+# Embedding Function
+# © 2026-Y2-S2-KU-DS-15
