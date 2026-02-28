@@ -10,10 +10,10 @@ class EmbeddingManager:
     def __init__(self, provider="gemini", project_id=None, location=None):
 
         if provider == "gemini":
-            self.model = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+            self.model = GoogleGenerativeAIEmbeddings(model="models/embedding-001",
             project=project_id,
             location=location,
-            vertexai=True
+            vertexai=True)
 
         elif provider == "openai":
             self.model = OpenAIEmbeddings(model="text-embedding-3-small")
