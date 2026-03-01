@@ -1,8 +1,11 @@
-{
+import main
+
+event = """{
     "version": "0",
     "id": "36a55530-2e60-0376-b25e-14766273946e",
     "detail-type": "Object Created",
     "source": "aws.s3",
+    "account": "958373515238",
     "time": "2026-03-01T11:35:32Z",
     "region": "ap-southeast-1",
     "resources": [
@@ -24,4 +27,6 @@
         "requester": "958373515238",
         "reason": "PutObject"
     }
-}
+}"""
+
+main.lambda_handler(event, "None")

@@ -78,6 +78,5 @@ websockets>=15.0.1
 xxhash>=3.6.0
 yarl>=1.22.0
 zstandard>=0.25.0
-
-langchain-openai
-google-cloud-aiplatform
+langchain-openai>=1.1.10
+google-cloud-aiplatform>=1.139.0
