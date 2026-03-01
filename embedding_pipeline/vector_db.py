@@ -4,9 +4,8 @@ import os
 class MilvusDB:
 
     @staticmethod
-    def init_vector_db():
+    def init_vector_db(embeddings):
         milvus_host = os.getenv("MILVUS_HOST")
-        embeddings = os.getenv("MILVUS_EMBEDDINGS")
         milvus_collection_name = os.getenv("MILVUS_COLLECTION_NAME")
         milvus_un = os.getenv("MILVUS_UN")
         milvus_pwd = os.getenv("MILVUS_PWD")

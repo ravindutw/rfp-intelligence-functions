@@ -5,8 +5,8 @@ from langchain_community.document_loaders import PyPDFLoader
 
 class S3Handler:
 
-    s3 = boto3.client('s3')
-    bucket_name = os.environ['S3_BUCKET_NAME']
+    S3 = boto3.client('s3')
+    BUCKET_NAME = os.environ['S3_BUCKET_NAME']
 
 
     def get_file(self, file_name, file_extension):
@@ -29,7 +29,7 @@ class S3Handler:
 
         with tempfile.NamedTemporaryFile(suffix=file_ext_, delete=False) as tmp_file:
             local_path = tmp_file.name
-            self.s3.download_fileobj(self.bucket_name, file_name, local_path)
+            self.S3.download_fileobj(self.BUCKET_NAME, file_name, local_path)
         try:
             loader = PyPDFLoader(local_path)
             docs = loader.load()
