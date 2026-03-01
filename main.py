@@ -5,17 +5,19 @@
 
 import os
 import json
-from cloud_kit.gcp.vertex_handler import VertexAI
 from embedding_pipeline.vector_db import MilvusDB
 from embedding_pipeline.embedding import EmbeddingManager
 from embedding_pipeline.docs import Docs
 from cloud_kit.aws.sm_handler import AWSSecretsManager
+from dotenv import load_dotenv
+
+load_dotenv()
 
 GCP_PROJECT_ID = os.environ.get("GCP_PROJECT_ID")
 GCP_LOCATION = os.environ.get("GCP_REGION")
 MILVUS_SECRET_NAME = os.environ.get("MILVUS_SECRET_NAME")
-CHUNK_SIZE = os.environ.get("CHUNK_SIZE")
-CHUNK_OVERLAP = os.environ.get("CHUNK_OVERLAP")
+CHUNK_SIZE = int(os.environ.get("CHUNK_SIZE"))
+CHUNK_OVERLAP = int(os.environ.get("CHUNK_OVERLAP"))
 EMBEDDING_MODEL = os.environ.get("EMBEDDING_MODEL")
 ALLOWED_FILE_EXTENSIONS = os.environ.get("ALLOWED_FILE_EXTENSIONS")
 
@@ -34,11 +36,9 @@ def lambda_handler(event, context):
         raise ValueError("Invalid file extension")
 
 def _run_embedding_pipeline(milvus_secret, object_path, file_ext):
-    VertexAI.init_vertex_ai(GCP_PROJECT_ID, GCP_LOCATION)
-
     chunks = Docs.chunk(object_path, CHUNK_SIZE, CHUNK_OVERLAP, file_ext)
 
-    embedding = EmbeddingManager(provider=EMBEDDING_MODEL)
+    embedding = EmbeddingManager(EMBEDDING_MODEL, GCP_PROJECT_ID, GCP_LOCATION)
     embedding_model = embedding.get_embedding_model()
 
     vector_db = MilvusDB.init_vector_db(embedding_model, milvus_secret)
@@ -47,4 +47,6 @@ def _run_embedding_pipeline(milvus_secret, object_path, file_ext):
 
 
 def _add_to_vector_db(vector_store, text_chunk):
-    vector_store.add_documents(documents=text_chunk)
+    sanitized_chunks = MilvusDB().sanitize_metadata_keys(documents=text_chunk)
+    vector_store.add_documents(documents=sanitized_chunks)
+    print("Added to vector store")

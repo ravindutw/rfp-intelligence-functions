@@ -1,15 +1,21 @@
 import os
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_openai import OpenAIEmbeddings
+from cloud_kit.gcp.vertex_handler import GoogleCloud
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 class EmbeddingManager:
-    def __init__(self, provider="gemini", project_id=None, location=None):
+    def __init__(self, provider, project_id, location):
+        credentials = GoogleCloud.get_gcp_credentials()
 
         if provider == "gemini":
             self.model = GoogleGenerativeAIEmbeddings(model="gemini-embedding-001",
             project=project_id,
             location=location,
+            credentials=credentials,
             vertexai=True)
 
         elif provider == "openai":

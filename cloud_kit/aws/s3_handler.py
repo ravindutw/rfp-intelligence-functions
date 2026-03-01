@@ -3,6 +3,9 @@ import os
 import tempfile
 from langchain_community.document_loaders import PyPDFLoader
 import json
+from dotenv import load_dotenv
+
+load_dotenv()
 
 class S3Handler:
 
@@ -19,7 +22,7 @@ class S3Handler:
         file_ext_ : str
         file_extension = file_extension.lower()
 
-        if file_extension not in allowed_ext_json:
+        if file_extension not in allowed_ext_json["ext_list"]:
             raise ValueError("Invalid file extension")
 
         if not file_extension.startswith('.'):
@@ -29,7 +32,7 @@ class S3Handler:
 
         with tempfile.NamedTemporaryFile(suffix=file_ext_, delete=False) as tmp_file:
             local_path = tmp_file.name
-            self.S3.download_fileobj(self.BUCKET_NAME, file_name, local_path)
+            self.S3.download_file(self.BUCKET_NAME, file_name, local_path)
         try:
             loader = PyPDFLoader(local_path)
             docs = loader.load()
