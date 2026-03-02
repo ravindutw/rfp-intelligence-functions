@@ -1,39 +1,41 @@
-import boto3
+# cloud_kit/s3_handler.py
+
 import os
 import tempfile
+import boto3
 from langchain_community.document_loaders import PyPDFLoader
 
+
 class S3Handler:
+    def __init__(self):
+        self.s3 = boto3.client("s3")
+        self.bucket_name = os.environ["S3_BUCKET_NAME"]
 
-    s3 = boto3.client('s3')
-    bucket_name = os.environ['S3_BUCKET_NAME']
+    def get_file(self, file_name: str, file_extension: str):
+        """
+        Downloads a file from S3 into a temp file and loads it as LangChain Documents.
+        Currently, supports PDF (PyPDFLoader).
+        """
+        ext = file_extension.lower().strip()
 
+        if not ext.startswith("."):
+            ext = "." + ext
 
-    def get_file(self, file_name, file_extension):
+        if ext != ".pdf":
+            raise ValueError("Only PDF is supported for now. Use .pdf")
 
-        # Pass the file name and extension (.pdf, .xlsx, .docx) to the function
+        with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as tmp:
+            local_path = tmp.name
 
-        file_ext_ : str
-        file_extension = file_extension.lower()
-
-        if file_extension == ".pdf" or file_extension == ".xlsx" or file_extension == ".docx":
-            file_ext_ = file_extension
-        elif file_extension == "pdf":
-            file_ext_ = ".pdf"
-        elif file_extension == "xlsx":
-            file_ext_ = ".xlsx"
-        elif file_extension == "docx":
-            file_ext_ = ".docx"
-        else:
-            raise ValueError("Invalid file extension")
-
-        with tempfile.NamedTemporaryFile(suffix=file_ext_, delete=False) as tmp_file:
-            local_path = tmp_file.name
-            self.s3.download_fileobj(self.bucket_name, file_name, local_path)
         try:
+
+            self.s3.download_file(self.bucket_name, file_name, local_path)
+
             loader = PyPDFLoader(local_path)
             docs = loader.load()
             return docs
         finally:
-            os.remove(local_path)
-
+            try:
+                os.remove(local_path)
+            except OSError:
+                pass
