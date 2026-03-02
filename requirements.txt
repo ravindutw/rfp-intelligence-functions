@@ -1,10 +1,7 @@
 # Direct dependencies only — transitive deps are resolved automatically by pip
 
 # AWS SDK
-boto3>=1.42.51
-
-# Environment variable loading
-python-dotenv>=1.2.1
+#boto3>=1.42.51
 
 # LangChain ecosystem
 langchain-community>=0.4.1

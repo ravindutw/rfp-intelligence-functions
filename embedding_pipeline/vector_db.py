@@ -2,9 +2,7 @@ from langchain_milvus import Milvus
 import os
 import json
 import re
-from dotenv import load_dotenv
 
-load_dotenv()
 
 class MilvusDB:
 

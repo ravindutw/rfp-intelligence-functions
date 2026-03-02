@@ -9,9 +9,7 @@ from embedding_pipeline.vector_db import MilvusDB
 from embedding_pipeline.embedding import EmbeddingManager
 from embedding_pipeline.docs import Docs
 from cloud_kit.aws.sm_handler import AWSSecretsManager
-from dotenv import load_dotenv
 
-load_dotenv()
 
 GCP_PROJECT_ID = os.environ.get("GCP_PROJECT_ID")
 GCP_LOCATION = os.environ.get("GCP_REGION")

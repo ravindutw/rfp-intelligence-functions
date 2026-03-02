@@ -1,8 +1,5 @@
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from cloud_kit.gcp.vertex_handler import GoogleCloud
-from dotenv import load_dotenv
-
-load_dotenv()
 
 
 class EmbeddingManager:
@@ -10,7 +7,7 @@ class EmbeddingManager:
         credentials = GoogleCloud.get_gcp_credentials()
 
         if provider == "gemini":
-            self.model = GoogleGenerativeAIEmbeddings(model="gemini-embedding-001",
+            self.model = GoogleGenerativeAIEmbeddings(model="text-embedding-005",
             project=project_id,
             location=location,
             credentials=credentials,
