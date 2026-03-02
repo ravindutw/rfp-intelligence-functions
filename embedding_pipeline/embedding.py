@@ -1,6 +1,4 @@
-import os
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
-from langchain_openai import OpenAIEmbeddings
 from cloud_kit.gcp.vertex_handler import GoogleCloud
 from dotenv import load_dotenv
 
@@ -17,9 +15,6 @@ class EmbeddingManager:
             location=location,
             credentials=credentials,
             vertexai=True)
-
-        elif provider == "openai":
-            self.model = OpenAIEmbeddings(model="text-embedding-3-small")
 
         else:
             raise ValueError("Invalid provider.")
