@@ -38,7 +38,8 @@ class MilvusDB:
                 "user": milvus_un,
                 "password": milvus_pwd,
                 "secure": True
-            }
+            },
+            auto_id = True
         )
 
         return vector_store

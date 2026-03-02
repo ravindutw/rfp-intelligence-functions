@@ -18,6 +18,7 @@ CHUNK_SIZE = int(os.environ.get("CHUNK_SIZE"))
 CHUNK_OVERLAP = int(os.environ.get("CHUNK_OVERLAP"))
 EMBEDDING_MODEL = os.environ.get("EMBEDDING_MODEL")
 ALLOWED_FILE_EXTENSIONS = os.environ.get("ALLOWED_FILE_EXTENSIONS")
+EMBEDDING_MODEL_NAME = os.environ.get("EMBEDDING_MODEL_NAME")
 
 def lambda_handler(event, context):
     body = json.loads(event['Records'][0]['body'])
@@ -36,7 +37,7 @@ def lambda_handler(event, context):
 def _run_embedding_pipeline(milvus_secret, object_path, file_ext):
     chunks = Docs.chunk(object_path, CHUNK_SIZE, CHUNK_OVERLAP, file_ext)
 
-    embedding = EmbeddingManager(EMBEDDING_MODEL, GCP_PROJECT_ID, GCP_LOCATION)
+    embedding = EmbeddingManager(EMBEDDING_MODEL, GCP_PROJECT_ID, GCP_LOCATION, EMBEDDING_MODEL_NAME)
     embedding_model = embedding.get_embedding_model()
 
     vector_db = MilvusDB.init_vector_db(embedding_model, milvus_secret)

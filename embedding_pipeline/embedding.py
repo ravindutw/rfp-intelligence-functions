@@ -3,11 +3,11 @@ from cloud_kit.gcp.vertex_handler import GoogleCloud
 
 
 class EmbeddingManager:
-    def __init__(self, provider, project_id, location):
+    def __init__(self, provider, project_id, location, model_name):
         credentials = GoogleCloud.get_gcp_credentials()
 
         if provider == "gemini":
-            self.model = GoogleGenerativeAIEmbeddings(model="text-embedding-005",
+            self.model = GoogleGenerativeAIEmbeddings(model=model_name,
             project=project_id,
             location=location,
             credentials=credentials,
