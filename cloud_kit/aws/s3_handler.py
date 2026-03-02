@@ -3,9 +3,6 @@ import os
 import tempfile
 from langchain_community.document_loaders import PyPDFLoader
 import json
-from dotenv import load_dotenv
-
-load_dotenv()
 
 class S3Handler:
 

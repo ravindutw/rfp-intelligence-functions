@@ -1,8 +1,6 @@
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from cloud_kit.gcp.vertex_handler import GoogleCloud
-from dotenv import load_dotenv
-
-load_dotenv()
+from google import genai
+from google.genai.types import EmbedContentConfig
 
 
 class EmbeddingManager:
@@ -10,22 +8,41 @@ class EmbeddingManager:
         credentials = GoogleCloud.get_gcp_credentials()
 
         if provider == "gemini":
-            self.model = GoogleGenerativeAIEmbeddings(model="gemini-embedding-001",
-            project=project_id,
-            location=location,
-            credentials=credentials,
-            vertexai=True)
-
+            self.model_name = "text-embedding-005"
+            self.client = genai.Client(
+                vertexai=True,
+                project=project_id,
+                location=location,
+                credentials=credentials,
+            )
         else:
             raise ValueError("Invalid provider.")
 
-    def embed_documents(self, text_chunks):
 
-        return self.model.embed_documents(text_chunks)
+    def embed_documents(self, text_chunks):
+        batch_size = 250
+        all_embeddings = []
+
+        for i in range(0, len(text_chunks), batch_size):
+            batch = text_chunks[i:i + batch_size]
+            response = self.client.models.embed_content(
+                model=self.model_name,
+                contents=batch,
+                config=EmbedContentConfig(
+                    task_type="RETRIEVAL_DOCUMENT",
+                ),
+            )
+            all_embeddings.extend([e.values for e in response.embeddings])
+
+        return all_embeddings
+
 
     def embed_query(self, user_query):
-
-        return self.model.embed_query(user_query)
-
-    def get_embedding_model(self):
-        return self.model
+        response = self.client.models.embed_content(
+            model=self.model_name,
+            contents=user_query,
+            config=EmbedContentConfig(
+                task_type="RETRIEVAL_QUERY",
+            ),
+        )
+        return response.embeddings[0].values

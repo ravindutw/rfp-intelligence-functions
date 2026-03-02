@@ -1,8 +1,6 @@
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from cloud_kit.aws.s3_handler import S3Handler
-from dotenv import load_dotenv
 
-load_dotenv()
 
 class Docs:
 
