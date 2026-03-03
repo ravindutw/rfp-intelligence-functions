@@ -24,23 +24,30 @@ EMBEDDING_MODEL_NAME = os.environ.get("EMBEDDING_MODEL_NAME")
 VERSION = "Beta-1.1"
 
 def lambda_handler(event, context):
-    print("RFP Intelligence Project Embedding Function")
-    print(f"Version: {VERSION}")
+    try:
+        print("RFP Intelligence Project Embedding Function")
+        print(f"Version: {VERSION}")
 
-    body = json.loads(event['Records'][0]['body'])
-    object_path = body["detail"]["object"]["key"]
-    file_ext = object_path.split('.')[-1]
+        body = json.loads(event['Records'][0]['body'])
+        object_path = body["detail"]["object"]["key"]
+        file_ext = object_path.split('.')[-1]
 
-    allowed_ext_json = json.loads(ALLOWED_FILE_EXTENSIONS)
+        allowed_ext_json = json.loads(ALLOWED_FILE_EXTENSIONS)
 
-    milvus_secret = AWSSecretsManager.get_secret(MILVUS_SECRET_NAME)
+        milvus_secret = AWSSecretsManager.get_secret(MILVUS_SECRET_NAME)
 
-    if file_ext in allowed_ext_json["ext_list"]:
-        _run_embedding_pipeline(milvus_secret, object_path, file_ext)
+        if file_ext in allowed_ext_json["ext_list"]:
+            _run_embedding_pipeline(milvus_secret, object_path, file_ext)
 
+            return {"statusCode": 200}
+
+        else:
+            raise ValueError("Invalid file extension")
+
+    except Exception as e:
+        print(f"Error: {e}")
         return {"statusCode": 200}
-    else:
-        raise ValueError("Invalid file extension")
+
 
 def _run_embedding_pipeline(milvus_secret, object_path, file_ext):
     docs = S3Handler().get_file(object_path, file_ext)
