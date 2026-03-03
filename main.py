@@ -7,8 +7,9 @@ import os
 import json
 from embedding_pipeline.vector_db import MilvusDB
 from embedding_pipeline.embedding import EmbeddingManager
-from embedding_pipeline.docs import Docs
 from cloud_kit.aws.sm_handler import AWSSecretsManager
+from cloud_kit.aws.s3_handler import S3Handler
+from embedding_pipeline.chunker import Chunker
 
 
 GCP_PROJECT_ID = os.environ.get("GCP_PROJECT_ID")
@@ -35,7 +36,10 @@ def lambda_handler(event, context):
         raise ValueError("Invalid file extension")
 
 def _run_embedding_pipeline(milvus_secret, object_path, file_ext):
-    chunks = Docs.chunk(object_path, CHUNK_SIZE, CHUNK_OVERLAP, file_ext)
+    docs = S3Handler().get_file(object_path, file_ext)
+    chunks = Chunker.chunk_documents(docs, CHUNK_SIZE, CHUNK_OVERLAP)
+    print(f"Split into {len(chunks)} chunks.")
+    #chunks = Docs.chunk(object_path, CHUNK_SIZE, CHUNK_OVERLAP, file_ext)
 
     embedding = EmbeddingManager(EMBEDDING_MODEL, GCP_PROJECT_ID, GCP_LOCATION, EMBEDDING_MODEL_NAME)
     embedding_model = embedding.get_embedding_model()
