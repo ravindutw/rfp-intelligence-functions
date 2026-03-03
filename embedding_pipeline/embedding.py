@@ -1,22 +1,17 @@
-import os
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
-from langchain_openai import OpenAIEmbeddings
+from cloud_kit.gcp.vertex_handler import GoogleCloud
 
-# Configuration - These should ideally be in a .env file
-os.environ["GOOGLE_API_KEY"] = "API Key"
-os.environ["OPENAI_API_KEY"] = "API Key"
 
 class EmbeddingManager:
-    def __init__(self, provider="gemini", project_id=None, location=None):
+    def __init__(self, provider, project_id, location, model_name):
+        credentials = GoogleCloud.get_gcp_credentials()
 
         if provider == "gemini":
-            self.model = GoogleGenerativeAIEmbeddings(model="models/embedding-001",
+            self.model = GoogleGenerativeAIEmbeddings(model=model_name,
             project=project_id,
             location=location,
+            credentials=credentials,
             vertexai=True)
-
-        elif provider == "openai":
-            self.model = OpenAIEmbeddings(model="text-embedding-3-small")
 
         else:
             raise ValueError("Invalid provider.")
@@ -28,3 +23,6 @@ class EmbeddingManager:
     def embed_query(self, user_query):
 
         return self.model.embed_query(user_query)
+
+    def get_embedding_model(self):
+        return self.model

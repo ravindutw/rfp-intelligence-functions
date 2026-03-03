@@ -7,7 +7,7 @@ class AWSSecretsManager:
 
     @staticmethod
     def get_secret(secret_name: str):
-        aws_region = os.environ['AWS_REGION']
+        aws_region = os.environ['AWS_REGION_NAME']
 
         # Create a Secrets Manager client
         session = boto3.session.Session()

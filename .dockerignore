@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE
+.idea/
+
+# Version control
+.git/
+.gitignore
+
+# Environment files
+.env
+
+# Tests
+test.py
+
+# Documentation
+README.md
+*.md
+
+Dockerfile
+.dockerignore
+
+tests/
+*.pyc
+
+json/
+
+.vscode/
+docs/
+
+.coverage
+*.log
