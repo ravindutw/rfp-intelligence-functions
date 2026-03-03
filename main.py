@@ -32,6 +32,8 @@ def lambda_handler(event, context):
 
     if file_ext in allowed_ext_json["ext_list"]:
         _run_embedding_pipeline(milvus_secret, object_path, file_ext)
+
+        return {"statusCode": 200}
     else:
         raise ValueError("Invalid file extension")
 
