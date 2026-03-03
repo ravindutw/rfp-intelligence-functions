@@ -1,7 +1,7 @@
 # RFP Intelligence Project
 # Embedding Function
 # © 2026-Y2-S2-KU-DS-15
-# Version Beta-1.1
+# Version: Beta-1.1
 
 import os
 import json
