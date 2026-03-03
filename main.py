@@ -21,7 +21,12 @@ EMBEDDING_MODEL = os.environ.get("EMBEDDING_MODEL")
 ALLOWED_FILE_EXTENSIONS = os.environ.get("ALLOWED_FILE_EXTENSIONS")
 EMBEDDING_MODEL_NAME = os.environ.get("EMBEDDING_MODEL_NAME")
 
+VERSION = "Beta-1.1"
+
 def lambda_handler(event, context):
+    print("RFP Intelligence Project Embedding Function")
+    print(f"Version: {VERSION}")
+
     body = json.loads(event['Records'][0]['body'])
     object_path = body["detail"]["object"]["key"]
     file_ext = object_path.split('.')[-1]
