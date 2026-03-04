@@ -1,4 +1,4 @@
-from langchain_milvus import Milvus
+from langchain_milvus import Milvus, BM25BuiltInFunction
 import os
 import json
 import re
@@ -33,13 +33,17 @@ class MilvusDB:
         vector_store = Milvus(
             embedding_function=embeddings,
             collection_name=milvus_collection_name,
+            builtin_function=BM25BuiltInFunction(),
+            vector_field=["dense", "sparse"],
+            consistency_level="Bounded",
+            auto_id=True,
+            drop_old=False,
             connection_args = {
                 "uri": milvus_host,
                 "user": milvus_un,
                 "password": milvus_pwd,
                 "secure": True
-            },
-            auto_id = True
+            }
         )
 
         return vector_store
