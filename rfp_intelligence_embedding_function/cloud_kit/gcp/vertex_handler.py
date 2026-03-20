@@ -1,6 +1,6 @@
 import os
 from google.oauth2 import service_account
-from cloud_kit.aws.sm_handler import AWSSecretsManager
+from rfp_intelligence_embedding_function.cloud_kit.aws.sm_handler import AWSSecretsManager
 import json
 
 

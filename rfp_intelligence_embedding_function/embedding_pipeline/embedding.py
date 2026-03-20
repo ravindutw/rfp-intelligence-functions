@@ -1,5 +1,5 @@
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
-from cloud_kit.gcp.vertex_handler import GoogleCloud
+from rfp_intelligence_embedding_function.cloud_kit.gcp.vertex_handler import GoogleCloud
 
 
 class EmbeddingManager:

@@ -8,7 +8,7 @@ __pycache__/
 
 # Distribution / packaging
 .Python
-build/
+rfp_intelligence_embedding_function/build/
 develop-eggs/
 dist/
 downloads/
@@ -135,7 +135,7 @@ celerybeat.pid
 *.sage.py
 
 # Environments
-.env
+rfp_intelligence_embedding_function/.env
 .envrc
 .venv
 env/

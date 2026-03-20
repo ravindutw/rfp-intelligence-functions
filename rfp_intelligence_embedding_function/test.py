@@ -1,4 +1,4 @@
-import main
+import rfp_intelligence_embedding_function.main as main
 import time
 
 

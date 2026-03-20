@@ -6,7 +6,7 @@ __pycache__/
 .Python
 *.egg-info/
 dist/
-build/
+rfp_intelligence_embedding_function/build/
 
 # Virtual environments
 venv/
@@ -21,22 +21,22 @@ ENV/
 .gitignore
 
 # Environment files
-.env
+rfp_intelligence_embedding_function/.env
 
 # Tests
-test.py
+rfp_intelligence_embedding_function/test.py
 
 # Documentation
 README.md
 *.md
 
-Dockerfile
+rfp_intelligence_embedding_function/Dockerfile
 .dockerignore
 
 tests/
 *.pyc
 
-json/
+rfp_intelligence_embedding_function/json/
 
 .vscode/
 docs/
