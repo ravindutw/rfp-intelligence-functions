@@ -7,11 +7,11 @@ import os
 import json
 import traceback
 
-from embedding_pipeline.vector_db import MilvusDB
-from embedding_pipeline.embedding import EmbeddingManager
-from cloud_kit.aws.sm_handler import AWSSecretsManager
-from cloud_kit.aws.s3_handler import S3Handler
-from embedding_pipeline.chunker import Chunker
+from rfp_intelligence_embedding_function.embedding_pipeline.vector_db import MilvusDB
+from rfp_intelligence_embedding_function.embedding_pipeline.embedding import EmbeddingManager
+from rfp_intelligence_embedding_function.cloud_kit.aws.sm_handler import AWSSecretsManager
+from rfp_intelligence_embedding_function.cloud_kit.aws.s3_handler import S3Handler
+from rfp_intelligence_embedding_function.embedding_pipeline.chunker import Chunker
 
 
 GCP_PROJECT_ID = os.environ.get("GCP_PROJECT_ID")

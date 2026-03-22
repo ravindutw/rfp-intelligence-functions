@@ -43,3 +43,5 @@ docs/
 
 .coverage
 *.log
+
+build.sh

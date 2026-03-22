@@ -211,3 +211,5 @@ keys/
 documents/
 
 .idea
+
+build.sh
