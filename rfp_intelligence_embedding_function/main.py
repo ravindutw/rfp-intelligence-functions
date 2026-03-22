@@ -1,7 +1,7 @@
 # RFP Intelligence Project
 # Embedding Function
 # © 2026-Y2-S2-KU-DS-15
-# Version: Beta-1.1
+# Version: Beta-2
 
 import os
 import json
@@ -23,7 +23,7 @@ EMBEDDING_MODEL = os.environ.get("EMBEDDING_MODEL")
 ALLOWED_FILE_EXTENSIONS = os.environ.get("ALLOWED_FILE_EXTENSIONS")
 EMBEDDING_MODEL_NAME = os.environ.get("EMBEDDING_MODEL_NAME")
 
-VERSION = "Beta-1.1"
+VERSION = "Beta-2"
 
 def lambda_handler(event, context):
     try:

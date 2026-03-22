@@ -30,10 +30,6 @@ class MilvusDB:
         milvus_un = milvus_secret_json["MILVUS_UNAME"]
         milvus_pwd = milvus_secret_json["MILVUS_PWD"]
 
-        #milvus_host = "https://in03-7b88ad21ad4f51c.serverless.aws-eu-central-1.cloud.zilliz.com"
-        #milvus_un = "db_7b88ad21ad4f51c"
-        #milvus_pwd = "Ju2~<X,zRuE01Yq6"
-
         vector_store = Milvus(
             embedding_function=embeddings,
             collection_name=milvus_collection_name,
