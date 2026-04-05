@@ -3,11 +3,13 @@
 # AWS SDK
 #boto3>=1.42.51
 
+pymilvus>=2.5.0,<2.6.0
+
 # LangChain ecosystem
 langchain-community>=0.4.1
 langchain-text-splitters>=1.1.0
 langchain-google-genai>=4.2.0
-langchain-milvus>=0.3.3
+langchain-milvus
 
 # PDF parsing (peer dependency of PyPDFLoader)
 pypdf>=6.7.0

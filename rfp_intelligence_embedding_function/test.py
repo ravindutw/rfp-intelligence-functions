@@ -8,7 +8,7 @@ def embed (file_):
             {
                 "messageId": "db5",
                 "receiptHandle": "AQ0",
-                "body": '{"version": "0", "id": "36", "detail-type": "Object Created", "source": "aws.s3", "time": "2026-03-01T11:35:32Z", "region": "ap-southeast-1", "resources": ["arn:aws:s3:::y2s2-aiml-project-knowledge-store"], "detail": {"version": "0", "bucket": {"name": "y2s2-aiml-project-knowledge-store"}, "object": {"key": "docs/' + file_ +'", "size": 259100, "etag": "389", "version-id": "o5d", "sequencer": "00"}, "request-id": "3N", "requester": "95", "reason": "PutObject"}}'
+                "body": '{"version": "0", "id": "36", "detail-type": "Object Created", "source": "aws.s3", "time": "2026-03-01T11:35:32Z", "region": "ap-southeast-1", "resources": ["arn:aws:s3:::y2s2-aiml-project-knowledge-store"], "detail": {"version": "0", "bucket": {"name": "y2s2-aiml-project-knowledge-store"}, "object": {"key": "' + file_ +'", "size": 259100, "etag": "389", "version-id": "o5d", "sequencer": "00"}, "request-id": "3N", "requester": "95", "reason": "PutObject"}}'
             }
         ]
     }
@@ -16,6 +16,7 @@ def embed (file_):
     main.lambda_handler(event, "None")
 
 
+"""
 file_names = [
     "MN-DN11-034 (NETWORKING - PHYSICAL LAYER).pdf",
     "MN-PS21-165 (MEASUREMENT SCALES).pdf",
@@ -43,6 +44,17 @@ file_names = [
     "MN-DN11-033 (PROTOCOL ARCHITECTURE).pdf",
     "MN-FC11-059 (PROCESSOR COMPONENTS).pdf",
     "MN-PS21-218 (CONTINUOUS DISTRIBUTIONS).pdf"
+]
+"""
+
+file_names = [
+    "MN-DN11-034 (NETWORKING - PHYSICAL LAYER).pdf",
+    "MN-PS21-165 (MEASUREMENT SCALES).pdf",
+    "MN-AI21-230 (ACTIVATION FUNCTIONS).pdf",
+    "MN-DN11-041 (NETWORKING - LINK LAYER).pdf",
+    "MN-PS21-173 (STATISTICS SPECIAL POINTS).pdf",
+    "MN-PS21-199 (PROBABILITY DISTRIBUTIONS EQUATIONS).pdf",
+    "MN-DD21-232 (DB SCHEMA REFINEMENT).pdf"
 ]
 
 for file in file_names:

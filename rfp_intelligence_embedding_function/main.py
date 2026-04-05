@@ -1,10 +1,12 @@
 # RFP Intelligence Project
 # Embedding Function
 # © 2026-Y2-S2-KU-DS-15
-# Version: Beta-1.1
+# Version: Beta-2
 
 import os
 import json
+import traceback
+
 from rfp_intelligence_embedding_function.embedding_pipeline.vector_db import MilvusDB
 from rfp_intelligence_embedding_function.embedding_pipeline.embedding import EmbeddingManager
 from rfp_intelligence_embedding_function.cloud_kit.aws.sm_handler import AWSSecretsManager
@@ -21,7 +23,7 @@ EMBEDDING_MODEL = os.environ.get("EMBEDDING_MODEL")
 ALLOWED_FILE_EXTENSIONS = os.environ.get("ALLOWED_FILE_EXTENSIONS")
 EMBEDDING_MODEL_NAME = os.environ.get("EMBEDDING_MODEL_NAME")
 
-VERSION = "Beta-1.1"
+VERSION = "Beta-2"
 
 def lambda_handler(event, context):
     try:
@@ -46,6 +48,7 @@ def lambda_handler(event, context):
 
     except Exception as e:
         print(f"Error: {e}")
+        traceback.print_exc()
         return {"statusCode": 200}
 
 
