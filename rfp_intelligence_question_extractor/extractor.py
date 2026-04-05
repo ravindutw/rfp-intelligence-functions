@@ -1,0 +1,224 @@
+import os
+import json
+import uuid
+from pathlib import Path
+from difflib import SequenceMatcher
+from typing import List, Tuple
+import tempfile
+
+import boto3
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import PydanticOutputParser
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_community.document_loaders import (
+    PDFPlumberLoader,
+    UnstructuredExcelLoader,
+    CSVLoader,
+    Docx2txtLoader
+)
+
+from models import ChunkExtractionResult, QuestionItem, ContextItem
+
+
+class DocumentLoader:
+    def __init__(self):
+        self.s3_client = boto3.client('s3')
+        self.bucket_name = os.environ.get('S3_BUCKET_NAME')
+
+    def load_from_s3(self, s3_key: str, file_extension: str):
+        """Download file from S3 and load as LangChain documents"""
+        with tempfile.NamedTemporaryFile(suffix=f".{file_extension}", delete=False) as tmp_file:
+            local_path = tmp_file.name
+            self.s3_client.download_file(self.bucket_name, s3_key, local_path)
+
+        try:
+            return self._load_local_file(local_path, file_extension)
+        finally:
+            os.unlink(local_path)
+
+    def _load_local_file(self, file_path: str, file_extension: str):
+        ext = file_extension.lower()
+        path = Path(file_path)
+
+        if ext == "pdf":
+            loader = PDFPlumberLoader(str(path))
+        elif ext in ("xlsx", "xls"):
+            loader = UnstructuredExcelLoader(str(path), mode="elements")
+        elif ext == "csv":
+            loader = CSVLoader(str(path))
+        elif ext == "docx":
+            loader = Docx2txtLoader(str(path))
+        else:
+            raise ValueError(f"Unsupported file type: {ext}")
+
+        docs = loader.load()
+        for i, doc in enumerate(docs):
+            doc.metadata["source_file"] = path.name
+            doc.metadata["segment_index"] = i
+            doc.metadata["file_extension"] = ext
+
+        return docs
+
+
+class Chunker:
+    def __init__(self, chunk_size=6000, chunk_overlap=500):
+        self.splitter = RecursiveCharacterTextSplitter(
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap,
+            separators=[
+                "\n--- Page", "\n--- Sheet", "\nSECTION", "\nSection",
+                "\nPart ", "\nPART ", "\n\n\n", "\n\n", "\n", ". ", " "
+            ],
+            length_function=len,
+            keep_separator=True,
+        )
+
+    def split(self, docs):
+        chunks = self.splitter.split_documents(docs)
+        for i, chunk in enumerate(chunks):
+            chunk.metadata["chunk_index"] = i
+            chunk.metadata["chunk_total"] = len(chunks)
+        return chunks
+
+
+class QuestionExtractor:
+    def __init__(self):
+        # Load system prompt from external file
+        self.system_prompt = self._load_system_prompt()
+
+        self.llm = ChatGoogleGenerativeAI(
+            model=os.environ.get("EXTRACTION_MODEL_NAME", "gemini-2.0-flash-exp"),
+            temperature=float(os.environ.get("EXTRACTION_TEMPERATURE", "0.1")),
+            max_output_tokens=4096,
+        )
+        self.parser = PydanticOutputParser(pydantic_object=ChunkExtractionResult)
+        self.chain = self._create_prompt() | self.llm | self.parser
+
+    def _load_system_prompt(self) -> str:
+        """Load system prompt from external file"""
+        prompt_paths = [
+            "prompt.txt",  # Same directory
+            os.path.join(os.path.dirname(__file__), "prompt.txt"),  # Package directory
+            os.environ.get("PROMPT_FILE_PATH", "prompt.txt"),  # Environment variable
+        ]
+
+        for path in prompt_paths:
+            try:
+                with open(path, 'r', encoding='utf-8') as f:
+                    prompt = f.read()
+                    print(f"Loaded system prompt from: {path}")
+                    return prompt
+            except FileNotFoundError:
+                continue
+
+        # Fallback prompt if file not found
+        print("Warning: prompt.txt not found, using default prompt")
+        return self._get_default_prompt()
+
+    def _get_default_prompt(self) -> str:
+        """Default system prompt as fallback"""
+        return """
+You are a document analyst. Separate text into QUESTIONS and CONTEXT.
+
+QUESTION: Any item expecting an answer (direct questions ending in "?",
+directives like "Explain...", "Describe...", numbered items, multiple-choice)
+
+CONTEXT: Everything else (instructions, background, headers, metadata)
+
+Preserve exact wording. Treat sub-parts (a, b, c) as separate questions.
+
+{format_instructions}
+"""
+
+    def _create_prompt(self):
+        return ChatPromptTemplate.from_messages([
+            ("system", self.system_prompt),
+            ("human", "DOCUMENT TEXT:\n---\n{chunk_text}\n---")
+        ])
+
+    def extract(self, chunk_text: str, chunk_index: int, max_retries: int = 3) -> ChunkExtractionResult:
+        """Extract questions and context from a chunk with retries"""
+        for attempt in range(max_retries):
+            try:
+                result = self.chain.invoke({
+                    "chunk_text": chunk_text,
+                    "format_instructions": self.parser.get_format_instructions()
+                })
+                return result
+            except Exception as e:
+                print(f"Attempt {attempt + 1} failed for chunk {chunk_index}: {e}")
+                if attempt == max_retries - 1:
+                    print(f"All retries exhausted for chunk {chunk_index}")
+
+        return ChunkExtractionResult()
+
+
+class PostProcessor:
+    @staticmethod
+    def similarity(a: str, b: str) -> float:
+        """Compute string similarity ratio"""
+        return SequenceMatcher(None, a.lower().strip(), b.lower().strip()).ratio()
+
+    @staticmethod
+    def deduplicate_questions(questions: List[QuestionItem], threshold: float = 0.85) -> List[QuestionItem]:
+        """Remove near-duplicate questions"""
+        unique = []
+        for q in questions:
+            is_dup = any(
+                PostProcessor.similarity(q.text, existing.text) >= threshold
+                for existing in unique
+            )
+            if not is_dup:
+                unique.append(q)
+
+        removed = len(questions) - len(unique)
+        if removed > 0:
+            print(f"  Dedup: removed {removed} duplicate(s)")
+        return unique
+
+    @staticmethod
+    def validate_questions(questions: List[QuestionItem], source_text: str, min_similarity: float = 0.6) -> List[
+        QuestionItem]:
+        """Validate that extracted questions exist in source text"""
+        validated = []
+        source_lower = source_text.lower()
+
+        for q in questions:
+            q_lower = q.text.lower().strip()
+
+            # Exact substring match
+            if q_lower in source_lower:
+                validated.append(q)
+                continue
+
+            # Partial prefix match (first 50 chars)
+            if q_lower[:50] in source_lower:
+                validated.append(q)
+                continue
+
+            # Fuzzy sliding window
+            window_size = len(q_lower)
+            found = False
+            for i in range(0, max(1, len(source_lower) - window_size), max(1, window_size // 4)):
+                if PostProcessor.similarity(q_lower, source_lower[i:i + window_size]) >= min_similarity:
+                    validated.append(q)
+                    found = True
+                    break
+
+            if not found:
+                print(f"  Removed hallucinated: {q.text[:80]}...")
+
+        return validated
+
+    @staticmethod
+    def assign_ids(questions: List[QuestionItem], context_blocks: List[ContextItem]) -> Tuple[
+        List[QuestionItem], List[ContextItem]]:
+        """Assign UUIDs to questions and context blocks"""
+        for q in questions:
+            if not q.id:
+                q.id = str(uuid.uuid4())
+        for c in context_blocks:
+            if not c.id:
+                c.id = str(uuid.uuid4())
+        return questions, context_blocks
