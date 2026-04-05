@@ -1,5 +1,5 @@
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
-from rfp_intelligence_embedding_function.cloud_kit.gcp.vertex_handler import GoogleCloud
+from cloud_kit.gcp.vertex_handler import GoogleCloud
 
 
 class EmbeddingManager:
@@ -11,7 +11,9 @@ class EmbeddingManager:
             project=project_id,
             location=location,
             credentials=credentials,
-            vertexai=True)
+            vertexai=True,
+            output_dimensionality=768
+            )
 
         else:
             raise ValueError("Invalid provider.")

@@ -1,5 +1,8 @@
-import rfp_intelligence_embedding_function.main as main
+import main
 import time
+from cloud_kit.aws.sm_handler import AWSSecretsManager
+import os
+import json
 
 
 def embed (file_):
@@ -8,7 +11,7 @@ def embed (file_):
             {
                 "messageId": "db5",
                 "receiptHandle": "AQ0",
-                "body": '{"version": "0", "id": "36", "detail-type": "Object Created", "source": "aws.s3", "time": "2026-03-01T11:35:32Z", "region": "ap-southeast-1", "resources": ["arn:aws:s3:::y2s2-aiml-project-knowledge-store"], "detail": {"version": "0", "bucket": {"name": "y2s2-aiml-project-knowledge-store"}, "object": {"key": "' + file_ +'", "size": 259100, "etag": "389", "version-id": "o5d", "sequencer": "00"}, "request-id": "3N", "requester": "95", "reason": "PutObject"}}'
+                "body": '{"version": "0", "id": "36", "detail-type": "Object Created", "source": "aws.s3", "time": "2026-03-01T11:35:32Z", "region": "ap-southeast-1", "resources": ["arn:aws:s3:::rfpi-knowledge-store-981268234198-ap-southeast-1-an"], "detail": {"version": "0", "bucket": {"name": "rfpi-knowledge-store-981268234198-ap-southeast-1-an"}, "object": {"key": "' + file_ +'", "size": 259100, "etag": "389", "version-id": "o5d", "sequencer": "00"}, "request-id": "3N", "requester": "95", "reason": "PutObject"}}'
             }
         ]
     }
@@ -48,16 +51,19 @@ file_names = [
 """
 
 file_names = [
-    "MN-DN11-034 (NETWORKING - PHYSICAL LAYER).pdf",
-    "MN-PS21-165 (MEASUREMENT SCALES).pdf",
-    "MN-AI21-230 (ACTIVATION FUNCTIONS).pdf",
-    "MN-DN11-041 (NETWORKING - LINK LAYER).pdf",
-    "MN-PS21-173 (STATISTICS SPECIAL POINTS).pdf",
-    "MN-PS21-199 (PROBABILITY DISTRIBUTIONS EQUATIONS).pdf",
     "MN-DD21-232 (DB SCHEMA REFINEMENT).pdf"
 ]
+
 
 for file in file_names:
     embed(file)
     print(f"Embedding {file}...")
     time.sleep(2)
+
+
+"""
+PGVECTOR_SECRET_NAME = os.environ.get("PGVECTOR_SECRET_NAME")
+secret = AWSSecretsManager.get_secret(PGVECTOR_SECRET_NAME)
+print(secret)
+"""
+
