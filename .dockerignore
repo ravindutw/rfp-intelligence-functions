@@ -12,6 +12,8 @@ rfp_intelligence_embedding_function/build/
 venv/
 env/
 ENV/
+*/.env
+*.env
 
 # IDE
 .idea/
@@ -43,3 +45,6 @@ docs/
 
 .coverage
 *.log
+
+*/build.sh
+build.sh

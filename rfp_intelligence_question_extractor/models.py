@@ -26,17 +26,17 @@ class RFPDocument(Base):
     client_industry = Column(String(100))
     submission_deadline = Column(TIMESTAMP(timezone=True))
     document_type = Column(String(10), nullable=False)
-    original_file_path = Column(String(1000), nullable=False)
-    file_size = Column(BigInteger)
-    file_format = Column(String(50))
-    status = Column(String, server_default="Uploaded")
+    original_file_path = Column(String(1000))
+    file_name = Column(String(100))
+    rfp_doc_url = Column(String(200))
+    status = Column(String, server_default="PENDING")
     total_questions = Column(Integer, server_default="0")
     answered_questions = Column(Integer, server_default="0")
-    created_by = Column(UUID(as_uuid=True), nullable=False)
-    assigned_to = Column(UUID(as_uuid=True), nullable=True)
+    context = Column(Text)
+    # completion_percentage is a GENERATED ALWAYS AS column — not mapped as a writable column
+    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=False)
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
-    updated_at = Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
-    last_accessed_at = Column(TIMESTAMP(timezone=True))
+    updated_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
 
     __table_args__ = (
         CheckConstraint("document_type IN ('RFP', 'RFI', 'RFQ')", name="document_type_check"),
@@ -55,14 +55,7 @@ class RFPQuestion(Base):
     page_number = Column(Integer)
     sequence_number = Column(Integer)
     status = Column(String, server_default="Pending")
-    difficulty_level = Column(Integer)
-    is_mandatory = Column(Boolean, server_default="false")
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
-
-    __table_args__ = (
-        UniqueConstraint("rfp_id", "sequence_number", name="unique_rfp_question_sequence"),
-        CheckConstraint("difficulty_level BETWEEN 1 AND 5", name="rfp_questions_difficulty_level_check"),
-    )
 
 
 # ============================================================================

@@ -24,7 +24,7 @@ class DatabaseManager:
             if db_secret_name:
                 db_secret = AWSSecretsManager.get_secret(db_secret_name)
                 db_config = json.loads(db_secret)
-                db_url = f"postgresql://{db_config['username']}:{db_config['password']}@{db_config['host']}:{db_config.get('port', 5432)}/{db_config['database']}"
+                db_url = f"postgresql://{db_config['username']}:{db_config['password']}@{db_config['host']}:{db_config['port']}/{db_config['dbname']}"
             else:
                 # Fallback for local development
                 db_url = f"postgresql://{os.environ.get('DB_USER')}:{os.environ.get('DB_PASSWORD')}@{os.environ.get('DB_HOST')}:{os.environ.get('DB_PORT', 5432)}/{os.environ.get('DB_NAME')}"
@@ -87,15 +87,13 @@ class DatabaseManager:
                     section_heading=getattr(q, 'section_heading', None),
                     page_number=getattr(q, 'page_number', None),
                     sequence_number=seq,
-                    difficulty_level=getattr(q, 'difficulty_level', 3),
-                    is_mandatory=getattr(q, 'is_mandatory', False),
-                    status="Extracted"
+                    status="Pending"
                 )
                 session.add(question)
                 saved_count += 1
 
             # Update total questions count
-            self.update_document_status(session, rfp_id, "Questions_Extracted", saved_count)
+            #self.update_document_status(session, rfp_id, "Questions_Extracted", saved_count)
             session.commit()
             print(f"Saved {saved_count} questions for RFP {rfp_id}")
             return saved_count
@@ -108,6 +106,27 @@ class DatabaseManager:
             session.rollback()
             print(f"Failed to save questions: {e}")
             raise
+
+
+    def save_context(self, session, rfp_id: str, context):
+        """Save context to database"""
+        try:
+            rfp_uuid = uuid.UUID(rfp_id)
+            all_context = []
+
+            for c in context:
+                all_context.append(c.text)
+
+            all_context = "\n".join(all_context)
+
+            session.query(RFPDocument).filter(RFPDocument.id == rfp_uuid).update({"context": all_context})
+            session.commit()
+            print(f"Saved context for RFP {rfp_id}")
+        except SQLAlchemyError as e:
+            session.rollback()
+            print(f"Database error saving context: {e}")
+            raise
+
 
     def document_exists(self, session, rfp_id: str) -> bool:
         """Check if document exists in database"""

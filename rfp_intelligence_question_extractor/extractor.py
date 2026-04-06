@@ -10,6 +10,7 @@ import boto3
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import PydanticOutputParser
+from langchain_google_vertexai import ChatVertexAI
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import (
     PDFPlumberLoader,
@@ -18,6 +19,7 @@ from langchain_community.document_loaders import (
     Docx2txtLoader
 )
 
+from cloud_kit.gcp.vertex_handler import GoogleCloud
 from models import ChunkExtractionResult, QuestionItem, ContextItem
 
 
@@ -91,6 +93,10 @@ class QuestionExtractor:
             model=os.environ.get("EXTRACTION_MODEL_NAME", "gemini-2.0-flash-exp"),
             temperature=float(os.environ.get("EXTRACTION_TEMPERATURE", "0.1")),
             max_output_tokens=4096,
+            project=os.environ.get("GCP_PROJECT_ID"),
+            location=os.environ.get("GCP_REGION", "us-central1"),
+            credentials=GoogleCloud.get_gcp_credentials(),
+            vertexai=True
         )
         self.parser = PydanticOutputParser(pydantic_object=ChunkExtractionResult)
         self.chain = self._create_prompt() | self.llm | self.parser

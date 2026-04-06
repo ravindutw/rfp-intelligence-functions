@@ -5,6 +5,7 @@
 
 import os
 import json
+import traceback
 from datetime import datetime
 
 from models import ExtractionEvent, ExtractionResult, QuestionItem, ContextItem
@@ -25,18 +26,20 @@ def lambda_handler(event, context):
 
     db_manager = None
 
-    try:
-        # Parse event body
-        if 'Records' in event:
-            body = json.loads(event['Records'][0]['body'])
-        else:
-            body = event
+    # Parse event body
+    if 'Records' in event:
+        body = json.loads(event['Records'][0]['body'])
+    else:
+        body = event
 
-        # Extract event data using Pydantic model
-        extraction_event = ExtractionEvent(**body)
-        rfp_id = extraction_event.rfp_id
-        s3_path = extraction_event.s3_path
-        file_ext = s3_path.split('.')[-1].lower()
+    # Extract event data using Pydantic model
+    extraction_event = ExtractionEvent(**body)
+
+    rfp_id = extraction_event.rfp_id
+    s3_path = extraction_event.s3_path
+    file_ext = s3_path.split('.')[-1].lower()
+
+    try:
 
         print(f"Processing RFP ID: {rfp_id}")
         print(f"S3 Path: {s3_path}")
@@ -56,13 +59,15 @@ def lambda_handler(event, context):
                 raise ValueError(f"RFP document with ID {rfp_id} not found in database")
 
             # Update status to processing
-            db_manager.update_document_status(session, rfp_id, "Processing")
+            #db_manager.update_document_status(session, rfp_id, "Processing")
 
             # Run extraction pipeline
             result = run_extraction_pipeline(s3_path, file_ext, rfp_id)
 
             # Save questions to database
             saved_count = db_manager.save_questions(session, rfp_id, result.questions)
+
+            db_manager.save_context(session, rfp_id, result.context_blocks)
 
             print(f"Successfully extracted and saved {saved_count} questions")
 
@@ -86,7 +91,7 @@ def lambda_handler(event, context):
         if db_manager and rfp_id:
             try:
                 session = db_manager.get_session()
-                db_manager.update_document_status(session, rfp_id, "Failed")
+                db_manager.update_document_status(session, rfp_id, "FAILED")
                 session.close()
             except:
                 pass
@@ -97,6 +102,7 @@ def lambda_handler(event, context):
 
     except Exception as e:
         print(f"Error in lambda_handler: {e}")
+        traceback.print_exc()
         if db_manager and 'rfp_id' in locals():
             try:
                 session = db_manager.get_session()
