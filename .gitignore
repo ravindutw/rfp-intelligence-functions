@@ -139,6 +139,8 @@ rfp_intelligence_embedding_function/.env
 .envrc
 .venv
 env/
+*/.env
+*.env
 venv/
 ENV/
 env.bak/
@@ -212,4 +214,5 @@ documents/
 
 .idea
 
+*/build.sh
 build.sh
