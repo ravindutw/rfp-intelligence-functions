@@ -51,7 +51,8 @@ class DatabaseManager:
             return session.query(RFPDocument).filter(RFPDocument.id == rfp_uuid).first()
         except ValueError:
             print(f"Invalid UUID format: {rfp_id}")
-            return None
+            raise
+
 
     def update_document_status(self, session, rfp_id: str, status: str, total_questions: int = None):
         """Update document status and question count"""
@@ -84,8 +85,6 @@ class DatabaseManager:
                     rfp_id=rfp_uuid,
                     question_text=q.text,
                     question_category=getattr(q, 'question_category', None),
-                    section_heading=getattr(q, 'section_heading', None),
-                    page_number=getattr(q, 'page_number', None),
                     sequence_number=seq,
                     status="Pending"
                 )
@@ -102,6 +101,7 @@ class DatabaseManager:
             session.rollback()
             print(f"Database error saving questions: {e}")
             raise
+
         except Exception as e:
             session.rollback()
             print(f"Failed to save questions: {e}")
@@ -134,4 +134,4 @@ class DatabaseManager:
             rfp_uuid = uuid.UUID(rfp_id)
             return session.query(RFPDocument).filter(RFPDocument.id == rfp_uuid).count() > 0
         except ValueError:
-            return False
+            raise

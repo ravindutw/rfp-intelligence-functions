@@ -7,12 +7,12 @@ import os
 import json
 import traceback
 from datetime import datetime
-
 from models import ExtractionEvent, ExtractionResult, QuestionItem, ContextItem
 from extractor import DocumentLoader, Chunker, QuestionExtractor, PostProcessor
 from db_manager import DatabaseManager
+from invoke_inference import InvokeInference
 
-VERSION = "1.0"
+VERSION = "test-1"
 ALLOWED_EXTENSIONS = json.loads(
     os.environ.get("ALLOWED_FILE_EXTENSIONS", '{"ext_list": ["pdf", "xlsx", "csv", "docx"]}'))
 CHUNK_SIZE = int(os.environ.get("CHUNK_SIZE", "6000"))
@@ -68,6 +68,9 @@ def lambda_handler(event, context):
             saved_count = db_manager.save_questions(session, rfp_id, result.questions)
 
             db_manager.save_context(session, rfp_id, result.context_blocks)
+
+            invoke_inference = InvokeInference()
+            invoke_inference.run_process_rfp(rfp_id)
 
             print(f"Successfully extracted and saved {saved_count} questions")
 

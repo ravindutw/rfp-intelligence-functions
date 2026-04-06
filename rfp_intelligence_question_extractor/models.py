@@ -1,14 +1,13 @@
 import uuid
 from sqlalchemy import (
-    Column, String, Text, Integer, BigInteger, Boolean,
-    TIMESTAMP, ForeignKey, UniqueConstraint, CheckConstraint
+    Column, String, Text, Integer,
+    TIMESTAMP, ForeignKey, CheckConstraint
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql import func
 from pydantic import BaseModel, Field
 from typing import Optional, List
-from datetime import datetime
 
 Base = declarative_base()
 
@@ -31,7 +30,6 @@ class RFPDocument(Base):
     rfp_doc_url = Column(String(200))
     status = Column(String, server_default="PENDING")
     total_questions = Column(Integer, server_default="0")
-    answered_questions = Column(Integer, server_default="0")
     context = Column(Text)
     # completion_percentage is a GENERATED ALWAYS AS column — not mapped as a writable column
     created_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=False)
@@ -51,8 +49,6 @@ class RFPQuestion(Base):
     rfp_id = Column(UUID(as_uuid=True), ForeignKey("rfp_documents.id", ondelete="CASCADE"), nullable=False)
     question_text = Column(Text, nullable=False)
     question_category = Column(String(50))
-    section_heading = Column(String(500))
-    page_number = Column(Integer)
     sequence_number = Column(Integer)
     status = Column(String, server_default="Pending")
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
