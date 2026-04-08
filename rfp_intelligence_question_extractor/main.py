@@ -12,7 +12,7 @@ from extractor import DocumentLoader, Chunker, QuestionExtractor, PostProcessor
 from db_manager import DatabaseManager
 from invoke_inference import InvokeInference
 
-VERSION = "test-1"
+VERSION = "1.0"
 ALLOWED_EXTENSIONS = json.loads(
     os.environ.get("ALLOWED_FILE_EXTENSIONS", '{"ext_list": ["pdf", "xlsx", "csv", "docx"]}'))
 CHUNK_SIZE = int(os.environ.get("CHUNK_SIZE", "6000"))
@@ -128,46 +128,32 @@ def run_extraction_pipeline(s3_path: str, file_ext: str, rfp_id: str) -> Extract
     print(f"{'=' * 60}")
 
     # Step 1: Load document from S3
-    print("\n[1/5] Loading document from S3...")
     loader = DocumentLoader()
     docs = loader.load_from_s3(s3_path, file_ext)
     raw_text = "\n\n".join(doc.page_content for doc in docs)
-    print(f"  Loaded {len(docs)} document segments, {len(raw_text)} characters")
 
     # Step 2: Split into chunks
-    print("\n[2/5] Splitting document into chunks...")
     chunker = Chunker(CHUNK_SIZE, CHUNK_OVERLAP)
     chunks = chunker.split(docs)
-    print(f"  Split into {len(chunks)} chunks")
 
     # Step 3: Extract questions and context
-    print("\n[3/5] Extracting questions using LLM...")
     extractor = QuestionExtractor()
     all_questions = []
     all_context = []
 
     for i, chunk in enumerate(chunks):
-        print(f"  Processing chunk {i + 1}/{len(chunks)}...", end=" ")
         result = extractor.extract(chunk.page_content, i)
         all_questions.extend(result.questions)
         all_context.extend(result.context_blocks)
-        print(f"found {len(result.questions)} questions")
-
-    print(f"  Raw extraction: {len(all_questions)} questions, {len(all_context)} context blocks")
 
     # Step 4: Post-process
-    print("\n[4/5] Post-processing...")
-    print(f"  Before dedup: {len(all_questions)}")
     all_questions = PostProcessor.deduplicate_questions(all_questions)
-    print(f"  After dedup: {len(all_questions)}")
 
     all_questions = PostProcessor.validate_questions(all_questions, raw_text)
-    print(f"  After validation: {len(all_questions)}")
 
     all_questions, all_context = PostProcessor.assign_ids(all_questions, all_context)
 
     # Step 5: Prepare result
-    print("\n[5/5] Preparing result...")
 
     result = ExtractionResult(
         rfp_id=rfp_id,
@@ -178,12 +164,6 @@ def run_extraction_pipeline(s3_path: str, file_ext: str, rfp_id: str) -> Extract
         context_blocks=all_context
     )
 
-    print(f"\n{'=' * 60}")
-    print(f"EXTRACTION SUMMARY")
-    print(f"{'=' * 60}")
-    print(f"Filename         : {result.filename}")
-    print(f"Questions found  : {result.total_questions}")
-    print(f"Context blocks   : {result.total_context_blocks}")
-    print(f"{'=' * 60}\n")
+    print(f"Total questions: {result.total_questions}")
 
     return result

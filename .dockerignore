@@ -48,3 +48,6 @@ docs/
 
 */build.sh
 build.sh
+
+test.py
+**/test.py

@@ -180,7 +180,7 @@ class PostProcessor:
 
         removed = len(questions) - len(unique)
         if removed > 0:
-            print(f"  Dedup: removed {removed} duplicate(s)")
+            print(f"Dedup: removed {removed} duplicate(s)")
         return unique
 
     @staticmethod
@@ -213,7 +213,7 @@ class PostProcessor:
                     break
 
             if not found:
-                print(f"  Removed hallucinated: {q.text[:80]}...")
+                print(f"Removed hallucinated: {q.text[:80]}...")
 
         return validated
 
