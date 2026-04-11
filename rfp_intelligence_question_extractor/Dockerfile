@@ -16,6 +16,7 @@ COPY invoke_inference.py ${LAMBDA_TASK_ROOT}/
 COPY main.py ${LAMBDA_TASK_ROOT}/
 COPY models.py ${LAMBDA_TASK_ROOT}/
 COPY prompt.txt ${LAMBDA_TASK_ROOT}/
+COPY certs ${LAMBDA_TASK_ROOT}/certs/
 
 # Set the CMD to your handler
 CMD ["main.lambda_handler"]

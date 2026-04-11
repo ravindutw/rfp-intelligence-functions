@@ -19,11 +19,12 @@ class DatabaseManager:
         self.db_cert_path: str
 
         db_environment = os.environ.get("DB_ENVIRONMENT")
+        base_dir = os.path.dirname(os.path.abspath(__file__))
 
-        if db_environment == "DGO":
-            self.db_cert_path = "./certs/dgo-ca-certificate.crt"
-        elif db_environment == "AWS":
-            self.db_cert_path = "./certs/ap-southeast-1-bundle.pem"
+        if db_environment == "AWS":
+            self.db_cert_path = os.path.join(base_dir, "certs/ap-southeast-1-bundle.pem")
+        elif db_environment == "DGO":
+            self.db_cert_path = os.path.join(base_dir, "certs/dgo-ca-certificate.crt")
         else:
             raise Exception("DB_ENVIRONMENT not set")
 

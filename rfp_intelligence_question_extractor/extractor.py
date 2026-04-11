@@ -107,10 +107,10 @@ class QuestionExtractor:
 
     def _load_system_prompt(self) -> str:
         """Load system prompt from external file"""
+        base_dir = os.path.dirname(os.path.abspath(__file__))
         prompt_paths = [
-            "prompt.txt",  # Same directory
-            os.path.join(os.path.dirname(__file__), "prompt.txt"),  # Package directory
-            os.environ.get("PROMPT_FILE_PATH", "prompt.txt"),  # Environment variable
+            os.path.join(base_dir, "prompt.txt"),
+            "prompt.txt"
         ]
 
         for path in prompt_paths:
