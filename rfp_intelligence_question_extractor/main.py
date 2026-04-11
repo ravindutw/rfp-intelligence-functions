@@ -1,7 +1,7 @@
 # RFP Intelligence Project
 # Question Extractor - Lambda Handler
 # © 2026-Y2-S2-KU-DS-15
-# Version: 1.0
+# Version: 1.1
 
 import os
 import json
@@ -12,7 +12,7 @@ from extractor import DocumentLoader, Chunker, QuestionExtractor, PostProcessor
 from db_manager import DatabaseManager
 from invoke_inference import InvokeInference
 
-VERSION = "1.0"
+VERSION = "1.1"
 ALLOWED_EXTENSIONS = json.loads(
     os.environ.get("ALLOWED_FILE_EXTENSIONS", '{"ext_list": ["pdf", "xlsx", "csv", "docx"]}'))
 CHUNK_SIZE = int(os.environ.get("CHUNK_SIZE", "6000"))
@@ -36,6 +36,7 @@ def lambda_handler(event, context):
     extraction_event = ExtractionEvent(**body)
 
     rfp_id = extraction_event.rfp_id
+    user_id = str(extraction_event.user_id)
     s3_path = extraction_event.s3_path
     file_ext = s3_path.split('.')[-1].lower()
 
@@ -62,7 +63,7 @@ def lambda_handler(event, context):
             #db_manager.update_document_status(session, rfp_id, "Processing")
 
             # Run extraction pipeline
-            result = run_extraction_pipeline(s3_path, file_ext, rfp_id)
+            result = run_extraction_pipeline(s3_path, file_ext, rfp_id, db_session=session, user_id=user_id)
 
             # Save questions to database
             saved_count = db_manager.save_questions(session, rfp_id, result.questions)
@@ -70,7 +71,7 @@ def lambda_handler(event, context):
             db_manager.save_context(session, rfp_id, result.context_blocks)
 
             invoke_inference = InvokeInference()
-            invoke_inference.run_process_rfp(rfp_id)
+            invoke_inference.run_process_rfp(rfp_id, user_id)
 
             print(f"Successfully extracted and saved {saved_count} questions")
 
@@ -119,7 +120,7 @@ def lambda_handler(event, context):
         }
 
 
-def run_extraction_pipeline(s3_path: str, file_ext: str, rfp_id: str) -> ExtractionResult:
+def run_extraction_pipeline(s3_path: str, file_ext: str, rfp_id: str, db_session=None, user_id: str = None) -> ExtractionResult:
     """Main extraction pipeline"""
     filename = s3_path.split('/')[-1]
     print(f"\n{'=' * 60}")
@@ -137,7 +138,7 @@ def run_extraction_pipeline(s3_path: str, file_ext: str, rfp_id: str) -> Extract
     chunks = chunker.split(docs)
 
     # Step 3: Extract questions and context
-    extractor = QuestionExtractor()
+    extractor = QuestionExtractor(db_session=db_session, user_id=user_id, rfp_id=rfp_id)
     all_questions = []
     all_context = []
 

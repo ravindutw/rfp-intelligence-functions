@@ -16,6 +16,17 @@ class DatabaseManager:
         self.engine = None
         self.SessionLocal = None
         self._init_db()
+        self.db_cert_path: str
+
+        db_environment = os.environ.get("DB_ENVIRONMENT")
+
+        if db_environment == "DGO":
+            self.db_cert_path = "./certs/dgo-ca-certificate.crt"
+        elif db_environment == "AWS":
+            self.db_cert_path = "./certs/ap-southeast-1-bundle.pem"
+        else:
+            raise Exception("DB_ENVIRONMENT not set")
+
 
     def _init_db(self):
         """Initialize database connection from Secrets Manager"""
@@ -26,10 +37,14 @@ class DatabaseManager:
                 db_config = json.loads(db_secret)
                 db_url = f"postgresql://{db_config['username']}:{db_config['password']}@{db_config['host']}:{db_config['port']}/{db_config['dbname']}"
             else:
-                # Fallback for local development
-                db_url = f"postgresql://{os.environ.get('DB_USER')}:{os.environ.get('DB_PASSWORD')}@{os.environ.get('DB_HOST')}:{os.environ.get('DB_PORT', 5432)}/{os.environ.get('DB_NAME')}"
+                raise Exception("DB_SECRET_NAME not set")
 
-            self.engine = create_engine(db_url, pool_pre_ping=True, echo=False)
+            self.engine = create_engine(
+                db_url,
+                connect_args={"sslmode": "verify-full", "sslrootcert": self.db_cert_path},
+                pool_pre_ping=True,
+                echo=False
+            )
             self.SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=self.engine)
 
             # Create tables if they don't exist

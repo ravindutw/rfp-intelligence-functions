@@ -8,8 +8,8 @@ class InvokeInference:
     def __init__(self):
         self.api_url = os.environ.get("AI_BACKEND_URL")
 
-    def run_process_rfp(self, rfp_id: str):
-        api_call_url = f"{self.api_url}/api/process-rfp/{rfp_id}"
+    def run_process_rfp(self, rfp_id: str, user_id: str):
+        api_call_url = f"{self.api_url}/api/process-rfp/{rfp_id}/{user_id}"
 
         try:
             response = requests.get(api_call_url)

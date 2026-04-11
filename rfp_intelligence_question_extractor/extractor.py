@@ -20,7 +20,7 @@ from langchain_community.document_loaders import (
 )
 
 from cloud_kit.gcp.vertex_handler import GoogleCloud
-from models import ChunkExtractionResult, QuestionItem, ContextItem
+from models import ChunkExtractionResult, QuestionItem, ContextItem, UsageLog
 
 
 class DocumentLoader:
@@ -85,12 +85,16 @@ class Chunker:
 
 
 class QuestionExtractor:
-    def __init__(self):
+    def __init__(self, db_session=None, user_id: str = None, rfp_id: str = None):
         # Load system prompt from external file
         self.system_prompt = self._load_system_prompt()
+        self.db_session = db_session
+        self.user_id = user_id
+        self.rfp_id = rfp_id
 
+        self.model_name = os.environ.get("EXTRACTION_MODEL_NAME", "gemini-2.0-flash-exp")
         self.llm = ChatGoogleGenerativeAI(
-            model=os.environ.get("EXTRACTION_MODEL_NAME", "gemini-2.0-flash-exp"),
+            model=self.model_name,
             temperature=float(os.environ.get("EXTRACTION_TEMPERATURE", "0.1")),
             max_output_tokens=4096,
             project=os.environ.get("GCP_PROJECT_ID"),
@@ -99,7 +103,7 @@ class QuestionExtractor:
             vertexai=True
         )
         self.parser = PydanticOutputParser(pydantic_object=ChunkExtractionResult)
-        self.chain = self._create_prompt() | self.llm | self.parser
+        self.prompt = self._create_prompt()
 
     def _load_system_prompt(self) -> str:
         """Load system prompt from external file"""
@@ -143,14 +147,52 @@ Preserve exact wording. Treat sub-parts (a, b, c) as separate questions.
             ("human", "DOCUMENT TEXT:\n---\n{chunk_text}\n---")
         ])
 
+    def _log_usage(self, response):
+        """Log LLM usage information to the database"""
+        if not self.db_session or not self.user_id:
+            return
+        try:
+            usage_metadata = response.usage_metadata if hasattr(response, 'usage_metadata') else {}
+            token_count = 0
+            metadata_dict = {}
+            if isinstance(usage_metadata, dict):
+                token_count = usage_metadata.get('total_tokens', 0)
+                metadata_dict = usage_metadata
+            elif usage_metadata:
+                token_count = getattr(usage_metadata, 'total_tokens', 0) or 0
+                metadata_dict = {
+                    'input_tokens': getattr(usage_metadata, 'input_tokens', 0),
+                    'output_tokens': getattr(usage_metadata, 'output_tokens', 0),
+                    'total_tokens': getattr(usage_metadata, 'total_tokens', 0),
+                }
+
+            usage_log = UsageLog(
+                user_id=uuid.UUID(self.user_id),
+                rfp_id=uuid.UUID(self.rfp_id) if self.rfp_id else None,
+                action_type='QUESTION_EXTRACTION',
+                ai_tokens_used=token_count,
+                ai_model_used=self.model_name,
+                status='SUCCESS',
+                usage_metadata=metadata_dict,
+            )
+            self.db_session.add(usage_log)
+            self.db_session.commit()
+            print(f"Logged usage: model={self.model_name}, tokens={token_count}")
+        except Exception as e:
+            self.db_session.rollback()
+            print(f"Failed to log usage: {e}")
+
     def extract(self, chunk_text: str, chunk_index: int, max_retries: int = 3) -> ChunkExtractionResult:
         """Extract questions and context from a chunk with retries"""
         for attempt in range(max_retries):
             try:
-                result = self.chain.invoke({
+                chain_without_parser = self.prompt | self.llm
+                response = chain_without_parser.invoke({
                     "chunk_text": chunk_text,
                     "format_instructions": self.parser.get_format_instructions()
                 })
+                self._log_usage(response)
+                result = self.parser.parse(response.content)
                 return result
             except Exception as e:
                 print(f"Attempt {attempt + 1} failed for chunk {chunk_index}: {e}")
