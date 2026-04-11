@@ -1,9 +1,9 @@
 import uuid
 from sqlalchemy import (
-    Column, String, Text, Integer,
+    Column, String, Text, Integer, Boolean,
     TIMESTAMP, ForeignKey, CheckConstraint
 )
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql import func
 from pydantic import BaseModel, Field
@@ -14,6 +14,24 @@ Base = declarative_base()
 # ============================================================================
 # SQLAlchemy ORM Models
 # ============================================================================
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    email = Column(String(255), nullable=False, unique=True)
+    first_name = Column(String(100), nullable=False)
+    last_name = Column(String(100), nullable=False)
+    role = Column(String(100), nullable=False)
+    phone_number = Column(String(20))
+    is_deleted = Column(Boolean, nullable=False, server_default="false")
+    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+    updated_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+
+    __table_args__ = (
+        CheckConstraint(r"email ~* '^\[?[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\]?$'", name="email_format"),
+    )
+
 
 class RFPDocument(Base):
     __tablename__ = "rfp_documents"
@@ -54,6 +72,20 @@ class RFPQuestion(Base):
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
 
 
+class UsageLog(Base):
+    __tablename__ = "usage_logs"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=False)
+    rfp_id = Column(UUID(as_uuid=True), ForeignKey("rfp_documents.id", ondelete="SET NULL"), nullable=True)
+    action_type = Column(String(50), nullable=False)
+    ai_tokens_used = Column(Integer, server_default="0")
+    ai_model_used = Column(String(100))
+    status = Column(String(20), nullable=False)
+    timestamp = Column(TIMESTAMP(timezone=True), server_default=func.now())
+    usage_metadata = Column("metadata", JSONB)
+
+
 # ============================================================================
 # Pydantic Models for API/Validation
 # ============================================================================
@@ -88,6 +120,7 @@ class ExtractionEvent(BaseModel):
     """Event payload from SQS/S3"""
     event: str
     rfp_id: str
+    user_id: uuid.UUID
     s3_path: str
     timestamp: str
 

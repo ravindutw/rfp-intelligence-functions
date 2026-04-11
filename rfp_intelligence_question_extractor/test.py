@@ -4,9 +4,8 @@ def extract ():
     event = {
         "Records": [
             {
-                "messageId": "db5",
                 "receiptHandle": "AQ0",
-                "body": '{"rfp_id":"0ba31e5f-6844-4edb-aa9b-d52f98b54c4a","s3_path":"rfp/0ba31e5f-6844-4edb-aa9b-d52f98b54c4a-rfp_1_1774357735812.pdf","event":"qe_event","timestamp":"2026-04-06 21:46:02"}'
+                "body": '{"rfp_id":"cd3e23b2-3999-489b-8a25-5dd19a5322af", "user_id":"00000000-0000-0000-0000-000000000000","s3_path":"rfp/cd3e23b2-3999-489b-8a25-5dd19a5322af-rfp_a0000002-0002-0002-0002-000000000002_1774944673027.pdf","event":"qe_event","timestamp":"2026-04-06 21:46:02"}'
             }
         ]
     }
