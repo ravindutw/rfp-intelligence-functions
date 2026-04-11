@@ -55,6 +55,16 @@ class PgVectorDB(_BaseVectorDB):
     @staticmethod
     def init_vector_db(embeddings, pgvector_secret: str):
         collection_name = os.getenv("PGVECTOR_COLLECTION_NAME")
+        db_environment = os.environ.get("DB_ENVIRONMENT")
+
+        db_cert_path: str
+
+        if db_environment == "DGO":
+            db_cert_path = "./certs/dgo-ca-certificate.crt"
+        elif db_environment == "AWS":
+            db_cert_path = "./certs/ap-southeast-1-bundle.pem"
+        else:
+            raise Exception("DB_ENVIRONMENT not set")
 
         pgvector_secret_json = json.loads(pgvector_secret)
         pg_host = pgvector_secret_json["host"]
@@ -63,11 +73,15 @@ class PgVectorDB(_BaseVectorDB):
         pg_user = pgvector_secret_json["username"]
         pg_pwd = pgvector_secret_json["password"]
 
+        ssl_params = f"?sslmode=verify-full&sslrootcert={db_cert_path}"
+
         connection_string = (
-            f"postgresql+psycopg://{pg_user}:{pg_pwd}@{pg_host}:{pg_port}/{pg_db}"
+            f"postgresql+psycopg://{pg_user}:{pg_pwd}"
+            f"@{pg_host}:{pg_port}/{pg_db}{ssl_params}"
         )
         psycopg_conn_string = (
-            f"postgresql://{pg_user}:{pg_pwd}@{pg_host}:{pg_port}/{pg_db}"
+            f"postgresql://{pg_user}:{pg_pwd}"
+            f"@{pg_host}:{pg_port}/{pg_db}{ssl_params}"
         )
 
         vector_store = PGVector(
