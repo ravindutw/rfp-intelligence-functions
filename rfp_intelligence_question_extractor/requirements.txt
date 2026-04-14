@@ -25,4 +25,3 @@ pydantic-settings>=2.0.0
 
 # Utilities
 typing-extensions>=4.0.0
-uuid

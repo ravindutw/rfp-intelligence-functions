@@ -1,7 +1,7 @@
 # RFP Intelligence Project
 # Embedding Function
 # © 2026-Y2-S2-KU-DS-15
-# Version: 1.0
+# Version: 1.1
 
 import os
 import json
@@ -16,17 +16,17 @@ from embedding_pipeline.chunker import Chunker
 
 GCP_PROJECT_ID = os.environ.get("GCP_PROJECT_ID")
 GCP_LOCATION = os.environ.get("GCP_REGION")
-CHUNK_SIZE = int(os.environ.get("CHUNK_SIZE"))
-CHUNK_OVERLAP = int(os.environ.get("CHUNK_OVERLAP"))
+CHUNK_SIZE = int(os.environ.get("CHUNK_SIZE", 500))
+CHUNK_OVERLAP = int(os.environ.get("CHUNK_OVERLAP", 50))
 EMBEDDING_MODEL = os.environ.get("EMBEDDING_MODEL")
-ALLOWED_FILE_EXTENSIONS = os.environ.get("ALLOWED_FILE_EXTENSIONS")
+ALLOWED_FILE_EXTENSIONS = os.environ.get("ALLOWED_FILE_EXTENSIONS", '{"ext_list": ["pdf"]}')
 EMBEDDING_MODEL_NAME = os.environ.get("EMBEDDING_MODEL_NAME")
 
 VECTOR_DB_PROVIDER = os.environ.get("VECTOR_DB_PROVIDER")
 MILVUS_SECRET_NAME = os.environ.get("MILVUS_SECRET_NAME")
 PGVECTOR_SECRET_NAME = os.environ.get("PGVECTOR_SECRET_NAME")
 
-VERSION = "1.0"
+VERSION = "1.1"
 
 
 def lambda_handler(event, context):
@@ -34,6 +34,9 @@ def lambda_handler(event, context):
         print("RFP Intelligence Project Embedding Function")
         print(f"Version: {VERSION}")
         print(f"Vector DB Provider: {VECTOR_DB_PROVIDER}")
+
+        if PGVECTOR_SECRET_NAME is None or VECTOR_DB_PROVIDER is None or EMBEDDING_MODEL is None or GCP_PROJECT_ID is None or GCP_LOCATION is None or EMBEDDING_MODEL_NAME is None:
+            raise ValueError("Required environment variables are not set")
 
         body = json.loads(event['Records'][0]['body'])
         object_path = body["detail"]["object"]["key"]
