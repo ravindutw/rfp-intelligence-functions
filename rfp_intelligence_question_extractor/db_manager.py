@@ -7,7 +7,7 @@ from sqlalchemy import create_engine, update
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import SQLAlchemyError
 
-from models import Base, RFPDocument, RFPQuestion, QuestionItem, RFPStatusHistory
+from models import Base, RFPDocument, RFPQuestion, RFPAnswer, AnswerVersion, QuestionItem, RFPStatusHistory
 from cloud_kit.aws.sm_handler import AWSSecretsManager
 
 
@@ -102,6 +102,38 @@ class DatabaseManager:
         except Exception as e:
             session.rollback()
             print(f"Failed to update document status: {e}")
+            raise
+
+
+    def delete_existing_questions(self, session, rfp_id: str):
+        """Delete existing questions and their related answers/answer versions for an RFP document (for re-try scenarios)"""
+        try:
+            rfp_uuid = uuid.UUID(rfp_id)
+
+            # Get question IDs for this RFP
+            question_ids = [q.id for q in session.query(RFPQuestion.id).filter(RFPQuestion.rfp_id == rfp_uuid).all()]
+
+            if question_ids:
+                # Get answer IDs for these questions
+                answer_ids = [a.id for a in session.query(RFPAnswer.id).filter(RFPAnswer.question_id.in_(question_ids)).all()]
+
+                if answer_ids:
+                    # Delete answer versions first
+                    deleted_versions = session.query(AnswerVersion).filter(AnswerVersion.answer_id.in_(answer_ids)).delete(synchronize_session='fetch')
+                    print(f"Deleted {deleted_versions} answer versions for RFP {rfp_id}")
+
+                # Delete answers
+                deleted_answers = session.query(RFPAnswer).filter(RFPAnswer.question_id.in_(question_ids)).delete(synchronize_session='fetch')
+                print(f"Deleted {deleted_answers} answers for RFP {rfp_id}")
+
+            # Delete questions
+            deleted_count = session.query(RFPQuestion).filter(RFPQuestion.rfp_id == rfp_uuid).delete(synchronize_session='fetch')
+            session.commit()
+            print(f"Deleted {deleted_count} existing questions for RFP {rfp_id}")
+            return deleted_count
+        except SQLAlchemyError as e:
+            session.rollback()
+            print(f"Database error deleting existing questions: {e}")
             raise
 
 

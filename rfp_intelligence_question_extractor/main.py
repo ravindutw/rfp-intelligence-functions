@@ -1,7 +1,7 @@
 # RFP Intelligence Project
 # Question Extractor - Lambda Handler
 # © 2026-Y2-S2-KU-DS-15
-# Version: 1.1.12
+# Version: 1.2
 
 import os
 import json
@@ -39,7 +39,6 @@ def _load_modules():
         return
 
     try:
-        print("Importing models...")
         from models import (
             ExtractionEvent as _ExtractionEvent,
             ExtractionResult as _ExtractionResult,
@@ -50,9 +49,7 @@ def _load_modules():
         ExtractionResult = _ExtractionResult
         QuestionItem = _QuestionItem
         ContextItem = _ContextItem
-        print("Models imported successfully")
 
-        print("Importing extractor...")
         from extractor import (
             DocumentLoader as _DocumentLoader,
             Chunker as _Chunker,
@@ -63,17 +60,12 @@ def _load_modules():
         Chunker = _Chunker
         QuestionExtractor = _QuestionExtractor
         PostProcessor = _PostProcessor
-        print("Extractor imported successfully")
 
-        print("Importing db_manager...")
         from db_manager import DatabaseManager as _DatabaseManager
         DatabaseManager = _DatabaseManager
-        print("DatabaseManager imported successfully")
 
-        print("Importing invoke_inference...")
         from invoke_inference import InvokeInference as _InvokeInference
         InvokeInference = _InvokeInference
-        print("All modules imported successfully")
 
         _modules_loaded = True
     except Exception as e:
@@ -81,7 +73,7 @@ def _load_modules():
         traceback.print_exc()
         raise
 
-VERSION = "1.1.12"
+VERSION = "1.2"
 ALLOWED_EXTENSIONS = json.loads(
     os.environ.get("ALLOWED_FILE_EXTENSIONS", '{"ext_list": ["pdf", "xlsx", "csv", "docx"]}'))
 CHUNK_SIZE = int(os.environ.get("CHUNK_SIZE", "6000"))
@@ -133,6 +125,9 @@ def lambda_handler(event, context):
 
             # Update status to processing
             #db_manager.update_document_status(session, rfp_id, "Processing")
+
+            # Delete any existing questions for this RFP (handles re-try scenarios)
+            db_manager.delete_existing_questions(session, rfp_id)
 
             # Run extraction pipeline
             result = run_extraction_pipeline(s3_path, file_ext, rfp_id, db_session=session, user_id=user_id)
@@ -195,33 +190,22 @@ def lambda_handler(event, context):
 def run_extraction_pipeline(s3_path: str, file_ext: str, rfp_id: str, db_session=None, user_id: str = None) -> ExtractionResult:
     """Main extraction pipeline"""
     filename = s3_path.split('/')[-1]
-    print(f"\n{'=' * 60}")
     print(f"Processing: {filename}")
     print(f"RFP ID: {rfp_id}")
-    print(f"{'=' * 60}")
 
     # Step 1: Load document from S3
     loader = DocumentLoader()
-    print(f"Loading document from S3: {s3_path}")
     docs = loader.load_from_s3(s3_path, file_ext)
-    print(f"Loaded {len(docs)} documents from S3")
     raw_text = "\n\n".join(doc.page_content for doc in docs)
-    print(f"Raw text length: {len(raw_text)} characters")
-
-    print(f"Loaded {len(docs)} documents from S3")
 
     # Step 2: Split into chunks
     chunker = Chunker(CHUNK_SIZE, CHUNK_OVERLAP)
     chunks = chunker.split(docs)
 
-    print(f"Split into {len(chunks)} chunks")
-
     # Step 3: Extract questions and context
     extractor = QuestionExtractor(db_session=db_session, user_id=user_id, rfp_id=rfp_id)
     all_questions = []
     all_context = []
-
-    print("Extracting questions...")
 
     for i, chunk in enumerate(chunks):
         result = extractor.extract(chunk.page_content, i)
@@ -234,8 +218,6 @@ def run_extraction_pipeline(s3_path: str, file_ext: str, rfp_id: str, db_session
     all_questions = PostProcessor.validate_questions(all_questions, raw_text)
 
     all_questions, all_context = PostProcessor.assign_ids(all_questions, all_context)
-
-    print(f"Post-processed {len(all_questions)} questions")
 
     # Step 5: Prepare result
 

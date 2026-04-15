@@ -15,7 +15,6 @@ from models import ChunkExtractionResult, QuestionItem, ContextItem, UsageLog
 class DocumentLoader:
     def __init__(self):
         try:
-            print("Initializing S3 client...")
             self.s3_client = boto3.client('s3', region_name='ap-southeast-1')
             self.bucket_name = os.environ.get('S3_BUCKET_NAME')
 
@@ -24,7 +23,6 @@ class DocumentLoader:
 
     def load_from_s3(self, s3_key: str, file_extension: str):
         """Download file from S3 and load as LangChain documents"""
-        print(f"Loading file from S3: {s3_key}")
         with tempfile.NamedTemporaryFile(suffix=f".{file_extension}", delete=False) as tmp_file:
             local_path = tmp_file.name
             try:

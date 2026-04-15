@@ -1,7 +1,7 @@
 import uuid
 from sqlalchemy import (
     Column, String, Text, Integer, Boolean,
-    TIMESTAMP, ForeignKey, CheckConstraint, BigInteger
+    TIMESTAMP, ForeignKey, CheckConstraint, BigInteger, Numeric, UniqueConstraint
 )
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.ext.declarative import declarative_base
@@ -70,6 +70,44 @@ class RFPQuestion(Base):
     sequence_number = Column(Integer)
     status = Column(String, server_default="Pending")
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+
+
+class RFPAnswer(Base):
+    __tablename__ = "rfp_answers"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    question_id = Column(UUID(as_uuid=True), ForeignKey("rfp_questions.id", ondelete="CASCADE"), nullable=False)
+    answer_text = Column(Text)
+    generated_by_ai = Column(Boolean, server_default="false")
+    confidence_score = Column(Numeric(3, 2))
+    answer_status = Column(String(20))
+    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+    updated_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+
+    __table_args__ = (
+        UniqueConstraint("question_id", name="unique_question_answer"),
+        CheckConstraint("confidence_score BETWEEN 0 AND 1", name="rfp_answers_confidence_score_check"),
+    )
+
+
+class AnswerVersion(Base):
+    __tablename__ = "answer_versions"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    answer_id = Column(UUID(as_uuid=True), ForeignKey("rfp_answers.id", ondelete="CASCADE"), nullable=False)
+    version_number = Column(Integer, nullable=False)
+    answer_text_snapshot = Column(Text, nullable=False)
+    change_type = Column(String(50), nullable=False)
+    changed_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    changed_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+    change_reason = Column(Text)
+    is_current = Column(Boolean, server_default="false")
+
+    __table_args__ = (
+        UniqueConstraint("answer_id", "version_number", name="unique_answer_version"),
+    )
+
+
 
 
 class UsageLog(Base):
