@@ -5,7 +5,7 @@ def extract ():
         "Records": [
             {
                 "receiptHandle": "AQ0",
-                "body": '{"rfp_id":"cd3e23b2-3999-489b-8a25-5dd19a5322af", "user_id":"00000000-0000-0000-0000-000000000000","s3_path":"rfp/cd3e23b2-3999-489b-8a25-5dd19a5322af-rfp_a0000002-0002-0002-0002-000000000002_1774944673027.pdf","event":"qe_event","timestamp":"2026-04-06 21:46:02"}'
+                "body": '{"rfp_id":"0dab98ea-07ff-4722-90cd-ace2c54e24ab", "user_id":"736169af-fef1-4ec2-9c12-704efb97d0cc","s3_path":"rfp/0dab98ea-07ff-4722-90cd-ace2c54e24ab-rfp-1.pdf","event":"qe_event","timestamp":"2026-04-06 21:46:02"}'
             }
         ]
     }

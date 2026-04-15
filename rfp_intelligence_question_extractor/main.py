@@ -1,18 +1,87 @@
 # RFP Intelligence Project
 # Question Extractor - Lambda Handler
 # © 2026-Y2-S2-KU-DS-15
-# Version: 1.1
+# Version: 1.1.12
 
 import os
 import json
 import traceback
 from datetime import datetime
-from models import ExtractionEvent, ExtractionResult, QuestionItem, ContextItem
-from extractor import DocumentLoader, Chunker, QuestionExtractor, PostProcessor
-from db_manager import DatabaseManager
-from invoke_inference import InvokeInference
 
-VERSION = "1.1"
+# Heavy modules are imported lazily inside lambda_handler to reduce
+# peak memory during Lambda cold-start.  With ~190 transitive
+# dependencies (langchain, spacy, google-cloud, numpy, pandas …)
+# eager module-level imports can exhaust a low-memory Lambda
+# (e.g. 128 MB) before the handler even runs, causing the process
+# to hang on the first boto3 / network call.
+
+_modules_loaded = False
+ExtractionEvent = None
+ExtractionResult = None
+QuestionItem = None
+ContextItem = None
+DocumentLoader = None
+Chunker = None
+QuestionExtractor = None
+PostProcessor = None
+DatabaseManager = None
+InvokeInference = None
+
+
+def _load_modules():
+    """Lazy-load all heavy dependencies on first invocation."""
+    global _modules_loaded
+    global ExtractionEvent, ExtractionResult, QuestionItem, ContextItem
+    global DocumentLoader, Chunker, QuestionExtractor, PostProcessor
+    global DatabaseManager, InvokeInference
+
+    if _modules_loaded:
+        return
+
+    try:
+        print("Importing models...")
+        from models import (
+            ExtractionEvent as _ExtractionEvent,
+            ExtractionResult as _ExtractionResult,
+            QuestionItem as _QuestionItem,
+            ContextItem as _ContextItem,
+        )
+        ExtractionEvent = _ExtractionEvent
+        ExtractionResult = _ExtractionResult
+        QuestionItem = _QuestionItem
+        ContextItem = _ContextItem
+        print("Models imported successfully")
+
+        print("Importing extractor...")
+        from extractor import (
+            DocumentLoader as _DocumentLoader,
+            Chunker as _Chunker,
+            QuestionExtractor as _QuestionExtractor,
+            PostProcessor as _PostProcessor,
+        )
+        DocumentLoader = _DocumentLoader
+        Chunker = _Chunker
+        QuestionExtractor = _QuestionExtractor
+        PostProcessor = _PostProcessor
+        print("Extractor imported successfully")
+
+        print("Importing db_manager...")
+        from db_manager import DatabaseManager as _DatabaseManager
+        DatabaseManager = _DatabaseManager
+        print("DatabaseManager imported successfully")
+
+        print("Importing invoke_inference...")
+        from invoke_inference import InvokeInference as _InvokeInference
+        InvokeInference = _InvokeInference
+        print("All modules imported successfully")
+
+        _modules_loaded = True
+    except Exception as e:
+        print(f"CRITICAL: Module import failed: {e}")
+        traceback.print_exc()
+        raise
+
+VERSION = "1.1.12"
 ALLOWED_EXTENSIONS = json.loads(
     os.environ.get("ALLOWED_FILE_EXTENSIONS", '{"ext_list": ["pdf", "xlsx", "csv", "docx"]}'))
 CHUNK_SIZE = int(os.environ.get("CHUNK_SIZE", "6000"))
@@ -23,6 +92,9 @@ def lambda_handler(event, context):
     """AWS Lambda handler for question extraction"""
     print(f"RFP Question Extractor - Version {VERSION}")
     print(f"Event received: {json.dumps(event)}")
+
+    # Lazy-load heavy modules on first invocation
+    _load_modules()
 
     db_manager = None
 
@@ -110,7 +182,7 @@ def lambda_handler(event, context):
         if db_manager and 'rfp_id' in locals():
             try:
                 session = db_manager.get_session()
-                db_manager.update_document_status(session, rfp_id, "Failed")
+                db_manager.update_document_status(session, rfp_id, "FAILED")
                 session.close()
             except:
                 pass
@@ -130,17 +202,26 @@ def run_extraction_pipeline(s3_path: str, file_ext: str, rfp_id: str, db_session
 
     # Step 1: Load document from S3
     loader = DocumentLoader()
+    print(f"Loading document from S3: {s3_path}")
     docs = loader.load_from_s3(s3_path, file_ext)
+    print(f"Loaded {len(docs)} documents from S3")
     raw_text = "\n\n".join(doc.page_content for doc in docs)
+    print(f"Raw text length: {len(raw_text)} characters")
+
+    print(f"Loaded {len(docs)} documents from S3")
 
     # Step 2: Split into chunks
     chunker = Chunker(CHUNK_SIZE, CHUNK_OVERLAP)
     chunks = chunker.split(docs)
 
+    print(f"Split into {len(chunks)} chunks")
+
     # Step 3: Extract questions and context
     extractor = QuestionExtractor(db_session=db_session, user_id=user_id, rfp_id=rfp_id)
     all_questions = []
     all_context = []
+
+    print("Extracting questions...")
 
     for i, chunk in enumerate(chunks):
         result = extractor.extract(chunk.page_content, i)
@@ -153,6 +234,8 @@ def run_extraction_pipeline(s3_path: str, file_ext: str, rfp_id: str, db_session
     all_questions = PostProcessor.validate_questions(all_questions, raw_text)
 
     all_questions, all_context = PostProcessor.assign_ids(all_questions, all_context)
+
+    print(f"Post-processed {len(all_questions)} questions")
 
     # Step 5: Prepare result
 

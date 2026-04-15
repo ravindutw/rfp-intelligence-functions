@@ -7,7 +7,7 @@ from sqlalchemy import create_engine, update
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import SQLAlchemyError
 
-from models import Base, RFPDocument, RFPQuestion, QuestionItem
+from models import Base, RFPDocument, RFPQuestion, QuestionItem, RFPStatusHistory
 from cloud_kit.aws.sm_handler import AWSSecretsManager
 
 
@@ -15,7 +15,6 @@ class DatabaseManager:
     def __init__(self):
         self.engine = None
         self.SessionLocal = None
-        self._init_db()
         self.db_cert_path: str
 
         db_environment = os.environ.get("DB_ENVIRONMENT")
@@ -27,6 +26,8 @@ class DatabaseManager:
             self.db_cert_path = os.path.join(base_dir, "certs/dgo-ca-certificate.crt")
         else:
             raise Exception("DB_ENVIRONMENT not set")
+
+        self._init_db()
 
 
     def _init_db(self):
@@ -42,9 +43,16 @@ class DatabaseManager:
 
             self.engine = create_engine(
                 db_url,
-                connect_args={"sslmode": "verify-full", "sslrootcert": self.db_cert_path},
+                connect_args={
+                    "sslmode": "verify-full",
+                    "sslrootcert": self.db_cert_path,
+                    "connect_timeout": 60,
+                    "options": "-c statement_timeout=30000"
+                },
                 pool_pre_ping=True,
-                echo=False
+                echo=False,
+                pool_timeout = 30,  # Seconds to wait for a connection from the pool
+                pool_recycle = 1800,
             )
             self.SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=self.engine)
 
@@ -54,11 +62,13 @@ class DatabaseManager:
 
         except Exception as e:
             print(f"Database initialization failed: {e}")
-            raise
+            raise Exception("Database initialization failed")
+
 
     def get_session(self):
         """Get database session"""
         return self.SessionLocal()
+
 
     def get_document_by_id(self, session, rfp_id: str) -> Optional[RFPDocument]:
         """Get RFP document by UUID"""
@@ -84,11 +94,16 @@ class DatabaseManager:
                 .values(**update_data)
             )
             session.commit()
+
+            session.add(RFPStatusHistory(rfp_id=rfp_uuid, status=status))
+            session.commit()
+
             print(f"Updated document {rfp_id} status to {status}")
         except Exception as e:
             session.rollback()
             print(f"Failed to update document status: {e}")
             raise
+
 
     def save_questions(self, session, rfp_id: str, questions: List[QuestionItem]):
         """Save extracted questions to database"""

@@ -1,7 +1,7 @@
 import uuid
 from sqlalchemy import (
     Column, String, Text, Integer, Boolean,
-    TIMESTAMP, ForeignKey, CheckConstraint
+    TIMESTAMP, ForeignKey, CheckConstraint, BigInteger
 )
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.ext.declarative import declarative_base
@@ -84,6 +84,16 @@ class UsageLog(Base):
     status = Column(String(20), nullable=False)
     timestamp = Column(TIMESTAMP(timezone=True), server_default=func.now())
     usage_metadata = Column("metadata", JSONB)
+
+
+class RFPStatusHistory(Base):
+    __tablename__ = "rfp_status_history"
+
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    rfp_id = Column(UUID(as_uuid=True), ForeignKey("rfp_documents.id"))
+    status = Column(String(50))
+    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+
 
 
 # ============================================================================

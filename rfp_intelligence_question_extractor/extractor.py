@@ -7,49 +7,55 @@ from typing import List, Tuple
 import tempfile
 
 import boto3
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.output_parsers import PydanticOutputParser
-from langchain_google_vertexai import ChatVertexAI
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_community.document_loaders import (
-    PDFPlumberLoader,
-    UnstructuredExcelLoader,
-    CSVLoader,
-    Docx2txtLoader
-)
 
-from cloud_kit.gcp.vertex_handler import GoogleCloud
 from models import ChunkExtractionResult, QuestionItem, ContextItem, UsageLog
 
 
 class DocumentLoader:
     def __init__(self):
-        self.s3_client = boto3.client('s3')
-        self.bucket_name = os.environ.get('S3_BUCKET_NAME')
+        try:
+            print("Initializing S3 client...")
+            self.s3_client = boto3.client('s3', region_name='ap-southeast-1')
+            self.bucket_name = os.environ.get('S3_BUCKET_NAME')
+
+        except Exception as e:
+            raise Exception(f"Failed to initialize S3 client: {e}")
 
     def load_from_s3(self, s3_key: str, file_extension: str):
         """Download file from S3 and load as LangChain documents"""
+        print(f"Loading file from S3: {s3_key}")
         with tempfile.NamedTemporaryFile(suffix=f".{file_extension}", delete=False) as tmp_file:
             local_path = tmp_file.name
-            self.s3_client.download_file(self.bucket_name, s3_key, local_path)
+            try:
+                self.s3_client.download_file(self.bucket_name, s3_key, local_path)
+            except Exception as e:
+                raise Exception(f"Failed to download file from S3: {e}")
 
         try:
             return self._load_local_file(local_path, file_extension)
+        except Exception as e:
+            print(f"Error loading file from S3: {e}")
+            raise Exception(f"Failed to load file from S3: {e}")
         finally:
             os.unlink(local_path)
+            print(f"Deleted temporary file: {local_path}")
 
     def _load_local_file(self, file_path: str, file_extension: str):
         ext = file_extension.lower()
         path = Path(file_path)
 
         if ext == "pdf":
+            from langchain_community.document_loaders import PDFPlumberLoader
             loader = PDFPlumberLoader(str(path))
         elif ext in ("xlsx", "xls"):
+            from langchain_community.document_loaders import UnstructuredExcelLoader
             loader = UnstructuredExcelLoader(str(path), mode="elements")
         elif ext == "csv":
+            from langchain_community.document_loaders import CSVLoader
             loader = CSVLoader(str(path))
         elif ext == "docx":
+            from langchain_community.document_loaders import Docx2txtLoader
             loader = Docx2txtLoader(str(path))
         else:
             raise ValueError(f"Unsupported file type: {ext}")
@@ -93,6 +99,10 @@ class QuestionExtractor:
         self.rfp_id = rfp_id
 
         self.model_name = os.environ.get("EXTRACTION_MODEL_NAME", "gemini-2.0-flash-exp")
+
+        from langchain_google_genai import ChatGoogleGenerativeAI
+        from cloud_kit.gcp.vertex_handler import GoogleCloud
+
         self.llm = ChatGoogleGenerativeAI(
             model=self.model_name,
             temperature=float(os.environ.get("EXTRACTION_TEMPERATURE", "0.1")),
@@ -102,8 +112,11 @@ class QuestionExtractor:
             credentials=GoogleCloud.get_gcp_credentials(),
             vertexai=True
         )
+
+        from langchain_core.output_parsers import PydanticOutputParser
         self.parser = PydanticOutputParser(pydantic_object=ChunkExtractionResult)
-        self.prompt = self._create_prompt()
+        from langchain_core.prompts import ChatPromptTemplate
+        self.prompt = self._create_prompt(ChatPromptTemplate)
 
     def _load_system_prompt(self) -> str:
         """Load system prompt from external file"""
@@ -141,7 +154,7 @@ Preserve exact wording. Treat sub-parts (a, b, c) as separate questions.
 {format_instructions}
 """
 
-    def _create_prompt(self):
+    def _create_prompt(self, ChatPromptTemplate):
         return ChatPromptTemplate.from_messages([
             ("system", self.system_prompt),
             ("human", "DOCUMENT TEXT:\n---\n{chunk_text}\n---")

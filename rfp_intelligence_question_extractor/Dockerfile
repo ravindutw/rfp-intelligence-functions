@@ -7,6 +7,14 @@ COPY requirements.txt ${LAMBDA_TASK_ROOT}/
 # Install Python dependencies
 RUN pip install -r requirements.txt
 
+# Pre-download NLTK data required by 'unstructured' to avoid runtime downloads
+RUN pip install nltk && \
+    python -c "import nltk; nltk.download('punkt', download_dir='/tmp/nltk_data'); nltk.download('punkt_tab', download_dir='/tmp/nltk_data'); nltk.download('averaged_perceptron_tagger', download_dir='/tmp/nltk_data'); nltk.download('averaged_perceptron_tagger_eng', download_dir='/tmp/nltk_data')" && \
+    mv /tmp/nltk_data ${LAMBDA_TASK_ROOT}/nltk_data
+
+# Set NLTK_DATA so it finds the pre-downloaded data
+ENV NLTK_DATA=${LAMBDA_TASK_ROOT}/nltk_data
+
 # Copy all source code (excluding tests and other unnecessary files)
 COPY __init__.py ${LAMBDA_TASK_ROOT}/
 COPY cloud_kit ${LAMBDA_TASK_ROOT}/cloud_kit/
