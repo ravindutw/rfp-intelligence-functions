@@ -1,7 +1,7 @@
 # RFP Intelligence Project
 # Embedding Function
 # © 2026-Y2-S2-KU-DS-15
-# Version: 1.1
+# Version: 1.1.1
 
 import os
 import json
@@ -26,7 +26,7 @@ VECTOR_DB_PROVIDER = os.environ.get("VECTOR_DB_PROVIDER")
 MILVUS_SECRET_NAME = os.environ.get("MILVUS_SECRET_NAME")
 PGVECTOR_SECRET_NAME = os.environ.get("PGVECTOR_SECRET_NAME")
 
-VERSION = "1.1"
+VERSION = "1.1.1"
 
 
 def lambda_handler(event, context):

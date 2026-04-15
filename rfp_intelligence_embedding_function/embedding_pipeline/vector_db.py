@@ -57,21 +57,28 @@ class PgVectorDB(_BaseVectorDB):
         collection_name = os.getenv("PGVECTOR_COLLECTION_NAME")
         db_environment = os.environ.get("DB_ENVIRONMENT")
 
+        _certs_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "certs")
+
         db_cert_path: str
 
         if db_environment == "DGO":
-            db_cert_path = "./certs/dgo-ca-certificate.crt"
+            db_cert_path = os.path.join(_certs_dir, "dgo-ca-certificate.crt")
         elif db_environment == "AWS":
-            db_cert_path = "./certs/ap-southeast-1-bundle.pem"
+            db_cert_path = os.path.join(_certs_dir, "ap-southeast-1-bundle.pem")
         else:
             raise Exception("DB_ENVIRONMENT not set")
 
         pgvector_secret_json = json.loads(pgvector_secret)
-        pg_host = pgvector_secret_json["host"]
-        pg_port = pgvector_secret_json["port"]
-        pg_db = pgvector_secret_json["dbname"]
         pg_user = pgvector_secret_json["username"]
         pg_pwd = pgvector_secret_json["password"]
+
+        #pg_host = pgvector_secret_json["host"]
+        #pg_port = pgvector_secret_json["port"]
+        #pg_db = pgvector_secret_json["dbname"]
+
+        pg_host = os.getenv("PGVECTOR_HOST")
+        pg_port = os.getenv("PGVECTOR_PORT")
+        pg_db = os.getenv("PGVECTOR_DB")
 
         ssl_params = f"?sslmode=verify-full&sslrootcert={db_cert_path}"
 

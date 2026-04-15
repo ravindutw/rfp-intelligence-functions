@@ -37,7 +37,12 @@ class DatabaseManager:
             if db_secret_name:
                 db_secret = AWSSecretsManager.get_secret(db_secret_name)
                 db_config = json.loads(db_secret)
-                db_url = f"postgresql://{db_config['username']}:{db_config['password']}@{db_config['host']}:{db_config['port']}/{db_config['dbname']}"
+
+                pg_host = os.getenv("PG_HOST")
+                pg_port = os.getenv("PG_PORT")
+                pg_db = os.getenv("PG_DB")
+
+                db_url = f"postgresql://{db_config['username']}:{db_config['password']}@{pg_host}:{pg_port}/{pg_db}"
             else:
                 raise Exception("DB_SECRET_NAME not set")
 

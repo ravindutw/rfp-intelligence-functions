@@ -12,6 +12,7 @@ COPY __init__.py ${LAMBDA_TASK_ROOT}/
 COPY main.py ${LAMBDA_TASK_ROOT}/
 COPY cloud_kit ${LAMBDA_TASK_ROOT}/cloud_kit/
 COPY embedding_pipeline ${LAMBDA_TASK_ROOT}/embedding_pipeline/
+COPY certs ${LAMBDA_TASK_ROOT}/certs/
 
 # Set the CMD to your handler
 CMD ["main.lambda_handler"]
