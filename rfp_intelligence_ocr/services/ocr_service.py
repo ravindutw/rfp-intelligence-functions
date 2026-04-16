@@ -45,7 +45,7 @@ async def call_gemini_with_retry(prompt: str, max_retries: int = 3) -> str:
                 error_str = str(e).lower()
                 if "503" in error_str or "unavailable" in error_str or "high demand" in error_str:
                     logger.warning(f"Model {model_name} returned 503 (attempt {attempt+1}). Trying next model...")
-                    await asyncio.sleep(1)  # short delay before next model
+                    await asyncio.sleep(1)  
                     continue
                 else:
                     logger.error(f"Gemini error with {model_name}: {e}")
