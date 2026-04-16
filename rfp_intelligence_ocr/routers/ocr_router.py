@@ -1,5 +1,5 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException
-from services.ocr_service import process_ocr_image
+from services.ocr_service import process_ocr_image, gemini_client
 from typing import Dict
 
 router = APIRouter(prefix="/ocr", tags=["OCR"])
