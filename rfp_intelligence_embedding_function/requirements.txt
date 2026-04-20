@@ -11,6 +11,7 @@ langchain-text-splitters>=1.1.0
 langchain-google-genai>=4.2.0
 langchain-postgres
 langchain-milvus
+langchain-aws
 
 # PDF parsing (peer dependency of PyPDFLoader)
 pypdf>=6.7.0
