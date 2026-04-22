@@ -1,4 +1,5 @@
 import easyocr
+import os
 from google import genai
 from typing import Optional
 from config.settings import settings
@@ -8,10 +9,15 @@ import asyncio
 
 logger = logging.getLogger(__name__)
 
+MODEL_DIR = os.environ.get("EASYOCR_MODULE_PATH", "/opt/easyocr")
+
 reader = easyocr.Reader(
     settings.OCR_LANGUAGES,
     gpu=settings.USE_GPU,
-    verbose=False
+    verbose=False,
+    model_storage_directory=MODEL_DIR,
+    user_network_directory=MODEL_DIR,
+    download_enabled=False,  # models are baked into the image
 )
 
 gemini_client: Optional[genai.Client] = None
