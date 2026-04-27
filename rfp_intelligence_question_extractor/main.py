@@ -1,7 +1,7 @@
 # RFP Intelligence Project
 # Question Extractor - Lambda Handler
 # © 2026-Y2-S2-KU-DS-15
-# Version: 1.2.1
+# Version: 1.2.2
 
 import os
 import json
@@ -73,7 +73,7 @@ def _load_modules():
         traceback.print_exc()
         raise
 
-VERSION = "1.2.1"
+VERSION = "1.2.2"
 ALLOWED_EXTENSIONS = json.loads(
     os.environ.get("ALLOWED_FILE_EXTENSIONS", '{"ext_list": ["pdf", "xlsx", "csv", "docx"]}'))
 CHUNK_SIZE = int(os.environ.get("CHUNK_SIZE", "6000"))
